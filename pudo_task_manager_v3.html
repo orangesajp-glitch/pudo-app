@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>PUDO保守 作業管理</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script>
+// GASのiframe内で配信されている場合、親フレームにiframeのサイズ拡大を要求する
+(function(){
+  try {
+    if(window.self !== window.top){
+      // iframe内で動いている場合、google.script.run経由でiframeを全画面化
+      document.documentElement.style.height = '100%';
+      document.documentElement.style.width = '100%';
+      // iframeの高さを画面全体に合わせるようgasに通知
+      if(typeof google !== 'undefined' && google.script && google.script.host){
+        google.script.host.setHeight(window.screen.height);
+        google.script.host.setWidth(window.screen.width);
+      }
+    }
+  } catch(e) {}
+})();
+</script>
+<style>
+  /* GASのWebアプリとして配信される場合、iframeで表示されるため
+     html/bodyを100%に広げてアプリを画面いっぱいに表示する */
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* GASのiframe内でviewportが正しく機能しない問題の対処 */
+    font-size: 16px;
+  }
+  :root{
+    --navy:#10243E;
+    --navy-2:#1B3A5C;
+    --orange:#FF6A1A;
+    --orange-deep:#E2540A;
+    --bg:#F4F1EA;
+    --card:#FFFFFF;
+    --line:#E4DFD3;
+    --ink:#1B2430;
+    --ink-soft:#5C6470;
+    --green:#1F8A5C;
+    --green-bg:#E5F4ED;
+    --amber:#C9881A;
+    --amber-bg:#FBF0DC;
+    --red:#C24B3B;
+    --red-bg:#FBEAE6;
+    --blue:#2F6FA8;
+    --blue-bg:#E8F1F8;
+    --purple:#6B4FA0;
+    --purple-bg:#EEE9F6;
+    --gray-bg:#ECE9E1;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--navy);}
+  body{
+    font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  #root{width:100%;max-width:100%;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;display:flex;flex-direction:column;}
+
+  .initial-loading-screen{
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 100%);padding:24px;text-align:center;
+  }
+  .initial-loading-screen .loading-text{color:#CBD8E6;font-size:19.5px;margin-bottom:18px;line-height:1.7;}
+  .initial-loading-screen .loading-spinner{
+    width:28px;height:28px;border-radius:50%;border:3px solid rgba(255,255,255,0.18);
+    border-top-color:var(--orange);animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  ::selection{background:var(--orange);color:#fff;}
+  button{font-family:inherit;}
+
+  /* ---- Header ---- */
+  .topbar{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 100%);
+    color:#fff;
+    padding:18px 18px 16px;
+    position:sticky;top:0;z-index:30;
+    box-shadow:0 4px 14px rgba(16,36,62,0.25);
+  }
+  .topbar-row{display:flex;align-items:center;justify-content:space-between;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{
+    width:34px;height:34px;border-radius:9px;
+    background:var(--orange);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:22.5px;color:#10243E;
+    box-shadow:0 2px 6px rgba(255,106,26,0.5);
+    flex-shrink:0;
+  }
+  .brand-text h1{margin:0;font-size:22.5px;font-weight:700;letter-spacing:0.02em;}
+  .brand-text p{margin:1px 0 0;font-size:15.8px;color:#A9BBD0;letter-spacing:0.04em;}
+  .icon-btn{
+    width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,0.18);
+    background:rgba(255,255,255,0.06);color:#fff;display:flex;align-items:center;justify-content:center;
+    font-size:24px;position:relative;
+  }
+  .icon-btn .badge-dot{
+    position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;
+    font-size:13.5px;font-weight:800;border-radius:99px;min-width:15px;height:15px;
+    display:flex;align-items:center;justify-content:center;padding:0 3px;border:2px solid var(--navy);
+  }
+  .stats-row{display:flex;gap:8px;margin-top:14px;}
+  .sync-status-row{margin-top:9px;font-size:15.8px;color:#A9BBD0;text-align:center;}
+  .sync-status-row .sync-error{color:#FF8B6B;}
+  .stat-chip{
+    flex:1;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);
+    border-radius:10px;padding:8px 6px;text-align:center;cursor:pointer;
+    transition:background 0.15s, border-color 0.15s;
+  }
+  .stat-chip:active{opacity:0.8;}
+  .stat-chip.stat-chip-active{background:rgba(255,255,255,0.22);border-color:rgba(255,255,255,0.5);}
+  .stat-chip .n{font-size:25.5px;font-weight:800;line-height:1.1;color:#fff;}
+  .stat-chip .l{font-size:14.2px;color:#A9BBD0;margin-top:2px;letter-spacing:0.02em;}
+  .stat-chip.alert .n{color:var(--orange);}
+  .stat-chip.urgent .n{color:#FF8B6B;}
+
+  /* ---- Filter tabs ---- */
+  .tabbar-wrap{
+    position:sticky;top:0;z-index:25;background:var(--bg);
+    padding:10px 14px 8px;border-bottom:1px solid var(--line);
+  }
+  .tab-all{flex:0 0 auto;padding:10px 15px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:18.8px;font-weight:600;color:var(--ink-soft);}
+  .tab-all.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .tab{
+    flex:0 0 auto;padding:7px 13px;border-radius:999px;border:1px solid var(--line);
+    background:#fff;font-size:18.8px;font-weight:600;color:var(--ink-soft);white-space:nowrap;
+  }
+  .tab.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .tab .cnt{opacity:0.7;margin-left:3px;font-weight:500;}
+
+  .sortbar{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
+  .search-input{
+    flex:1;border:1px solid var(--line);background:#fff;border-radius:9px;
+    padding:8px 11px;font-size:19.5px;color:var(--ink);margin-right:8px;
+  }
+  .search-input:focus{outline:2px solid var(--orange);outline-offset:-1px;}
+  .sort-select{
+    border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 8px;font-size:18px;color:var(--ink-soft);
+  }
+
+  /* ---- List ---- */
+  .list{flex:1;padding:12px 14px 100px;}
+  .empty-state{
+    text-align:center;color:var(--ink-soft);padding:60px 20px;font-size:19.5px;line-height:1.8;
+  }
+  .empty-state .big{font-size:51px;display:block;margin-bottom:8px;}
+
+  .dup-banner{
+    background:var(--red-bg);border:1.5px solid var(--red);border-radius:11px;
+    padding:11px 13px;margin-bottom:12px;font-size:18px;color:var(--red);line-height:1.6;
+    display:flex;gap:8px;align-items:flex-start;
+  }
+  .dup-banner .ic{font-size:24px;flex-shrink:0;}
+  .dup-banner b{font-weight:800;}
+
+  .task-card{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:14px;margin-bottom:11px;position:relative;overflow:hidden;
+    box-shadow:0 1px 2px rgba(16,36,62,0.04);
+  }
+  .task-card.status-完了{opacity:0.62;}
+  .task-card.is-urgent{border-color:#F0B8A8;}
+  .accent-bar{position:absolute;left:0;top:0;bottom:0;width:4px;}
+  .task-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;}
+  .task-meta-left{min-width:0;}
+  .req-no-row{display:flex;align-items:center;gap:6px;}
+  .req-no{font-size:15.8px;color:var(--ink-soft);font-weight:600;letter-spacing:0.03em;}
+  .dup-tag{
+    font-size:13.5px;font-weight:800;color:#fff;background:var(--red);border-radius:5px;padding:1.5px 5px;
+  }
+  .locker-name{font-size:23.2px;font-weight:700;color:var(--navy);margin-top:2px;line-height:1.3;}
+  .pcj-row{display:flex;gap:6px;align-items:center;margin-top:3px;flex-wrap:wrap;}
+  .pcj{font-size:16.5px;color:var(--ink-soft);}
+  .locker-type-badge{
+    font-size:14.2px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--gray-bg);color:var(--ink-soft);
+  }
+  .type-out{background:#E8F1F8;color:#2F6FA8;}
+  .type-in{background:#E5F4ED;color:#1F8A5C;}
+  .type-LITE{background:var(--amber-bg);color:var(--amber);}
+  .type-toyota{background:var(--purple-bg);color:var(--purple);}
+
+  .badge-col{display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0;}
+  .urgency-badge{
+    font-size:15.8px;font-weight:800;padding:4px 10px;border-radius:7px;white-space:nowrap;
+  }
+  .urgency-緊急{background:var(--red-bg);color:var(--red);}
+  .urgency-通常{background:var(--blue-bg);color:var(--blue);}
+
+  .task-address{font-size:18.8px;color:var(--ink-soft);display:flex;gap:5px;align-items:flex-start;margin-bottom:6px;}
+  .task-address .ic{flex-shrink:0;margin-top:1px;}
+  .task-trouble{
+    font-size:18.8px;color:var(--ink);background:#FBF6EE;border:1px solid #F0E5CE;
+    border-radius:8px;padding:7px 9px;margin-bottom:8px;line-height:1.5;
+  }
+  .task-trouble b{color:var(--orange-deep);font-weight:700;}
+
+  .task-info-grid{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:17.2px;color:var(--ink-soft);margin-bottom:10px;}
+  .task-info-grid span b{color:var(--ink);font-weight:600;}
+
+  .status-summary-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+  .current-status-tag{
+    font-size:18px;font-weight:800;padding:6px 13px;border-radius:9px;
+  }
+  .current-status-tag.cs-未着手{background:var(--gray-bg);color:#5C5848;}
+  .current-status-tag.cs-部材待ち{background:var(--blue-bg);color:var(--blue);}
+  .current-status-tag.cs-保留{background:var(--red-bg);color:var(--red);}
+  .current-status-tag.cs-作業中{background:var(--amber-bg);color:var(--amber);}
+  .current-status-tag.cs-完了{background:var(--green-bg);color:var(--green);}
+
+  .hold-btns{display:flex;gap:6px;}
+  .hold-pill{
+    padding:6px 11px;border-radius:8px;font-size:16.5px;font-weight:700;
+    border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);
+  }
+  .hold-pill:active{transform:scale(0.95);}
+  .hold-pill.hold-active{background:var(--red-bg);border-color:var(--red);color:var(--red);}
+
+  .start-work-btn{
+    width:100%;background:var(--amber);color:#fff;border:none;border-radius:11px;padding:13px;
+    font-size:21.8px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:6px;
+    box-shadow:0 4px 12px rgba(201,136,26,0.3);
+  }
+  .start-work-btn:active{opacity:0.85;}
+  .complete-work-btn{
+    width:100%;background:var(--green);color:#fff;border:none;border-radius:11px;padding:14px;
+    font-size:22.5px;font-weight:800;margin-top:18px;display:flex;align-items:center;justify-content:center;gap:6px;
+    box-shadow:0 4px 12px rgba(31,138,92,0.32);
+  }
+  .complete-work-btn:active{opacity:0.85;}
+  .working-banner{
+    background:var(--amber-bg);color:var(--amber);border-radius:9px;padding:10px 12px;
+    font-size:18.8px;font-weight:700;margin-bottom:14px;text-align:center;
+  }
+  .completed-banner{
+    background:var(--green-bg);color:var(--green);border-radius:9px;padding:10px 12px;
+    font-size:18.8px;font-weight:700;margin-bottom:14px;text-align:center;
+  }
+
+  .task-foot{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--line);padding-top:9px;}
+  .task-foot-meta{font-size:16.5px;color:var(--ink-soft);}
+  .mail-time-unset{color:#A9A38A;font-style:italic;}
+  .expand-btn{
+    font-size:17.2px;color:var(--navy-2);font-weight:600;background:none;border:none;padding:4px 2px;
+    display:flex;align-items:center;gap:3px;
+  }
+
+  .detail-panel{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);}
+  .detail-row{display:flex;font-size:18px;margin-bottom:7px;align-items:flex-start;}
+  .detail-row .k{width:88px;flex-shrink:0;color:var(--ink-soft);}
+  .detail-row .v{color:var(--ink);font-weight:500;flex:1;white-space:pre-wrap;line-height:1.6;}
+  .instruction-box{
+    background:#F6F3EC;border:1px solid var(--line);border-radius:9px;padding:10px 11px;
+    font-size:18px;color:var(--ink);white-space:pre-wrap;line-height:1.7;margin-top:4px;
+  }
+  .textarea-field{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 9px;font-size:18.8px;
+    font-family:inherit;resize:vertical;min-height:54px;margin-top:4px;color:var(--ink);
+  }
+  .textarea-field:focus{outline:2px solid var(--orange);outline-offset:-1px;}
+  .text-field{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 9px;font-size:18.8px;
+    font-family:inherit;margin-top:4px;color:var(--ink);
+  }
+  .text-field:focus{outline:2px solid var(--orange);outline-offset:-1px;}
+  .field-label{font-size:16.5px;color:var(--ink-soft);font-weight:600;margin-top:10px;display:block;}
+
+  /* ---- Photo attach ---- */
+  .photo-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+  .photo-thumb{
+    width:64px;height:64px;border-radius:9px;overflow:hidden;position:relative;
+    border:1px solid var(--line);background:#fff;flex-shrink:0;
+  }
+  .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photo-thumb .remove-btn{
+    position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:99px;
+    background:rgba(16,36,62,0.78);color:#fff;border:none;font-size:16.5px;
+    display:flex;align-items:center;justify-content:center;line-height:1;
+  }
+  .photo-add-btn{
+    width:64px;height:64px;border-radius:9px;border:1.5px dashed var(--line);background:#FBFAF7;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:var(--ink-soft);font-size:15px;gap:2px;flex-shrink:0;
+  }
+  .photo-add-btn:disabled{opacity:0.6;}
+  .photo-add-btn .plus{font-size:27px;line-height:1;color:var(--orange-deep);}
+  .photo-error-text{font-size:16.5px;color:var(--red);margin-top:6px;}
+  .photo-count-tag{
+    font-size:14.2px;font-weight:700;color:var(--green);background:var(--green-bg);
+    border-radius:6px;padding:1.5px 6px;margin-left:5px;
+  }
+
+  /* ---- Mail send modal ---- */
+  .mail-field{margin-bottom:12px;}
+  .mail-field label{font-size:16.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:4px;}
+  .mail-photo-section{
+    background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px;margin-top:14px;
+  }
+  .mail-photo-task-name{font-size:18px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+  .photo-sub-label{font-size:15px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;}
+  .mail-step-banner{
+    background:var(--blue-bg);border:1px solid var(--blue);border-radius:10px;padding:10px 12px;
+    font-size:17.2px;color:var(--blue);line-height:1.7;margin-bottom:14px;display:flex;gap:8px;
+  }
+  .mail-step-banner .ic{flex-shrink:0;}
+  .mail-step-banner b{font-weight:800;}
+  .save-all-btn{
+    width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;padding:11px;
+    font-size:18.8px;font-weight:700;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .save-all-btn:disabled{background:#A9C9B8;}
+
+  /* ---- FAB / Report bottom sheet trigger ---- */
+  .fab-wrap{position:fixed;left:0;right:0;bottom:0;max-width:100%;margin:0 auto;z-index:40;pointer-events:none;}
+  .fab-bar{
+    pointer-events:auto;
+    background:linear-gradient(180deg,rgba(244,241,234,0) 0%,var(--bg) 22%);
+    padding:14px 14px calc(14px + env(safe-area-inset-bottom));
+    display:flex;gap:10px;
+  }
+  .fab-btn{
+    flex:1;border:none;border-radius:13px;padding:14px;font-size:21px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    box-shadow:0 6px 16px rgba(16,36,62,0.18);
+  }
+  .fab-primary{background:var(--orange);color:#fff;}
+  .fab-primary:active{background:var(--orange-deep);}
+  .fab-secondary{background:#fff;color:var(--navy);border:1.5px solid var(--line);box-shadow:0 2px 8px rgba(16,36,62,0.08);}
+  .fab-full{flex:1;}
+  .fab-secondary .dot{
+    background:var(--orange);color:#fff;border-radius:999px;font-size:15px;font-weight:800;
+    width:17px;height:17px;display:flex;align-items:center;justify-content:center;margin-left:2px;
+  }
+
+  /* ---- Modal ---- */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(16,36,62,0.55);z-index:50;
+    display:flex;align-items:flex-end;justify-content:center;
+  }
+  .modal-sheet{
+    background:var(--bg);width:100%;max-width:100%;border-radius:18px 18px 0 0;
+    max-height:88vh;display:flex;flex-direction:column;
+    animation:slideUp 0.22s ease-out;
+  }
+  @keyframes slideUp{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .modal-handle{width:38px;height:4px;background:var(--line);border-radius:99px;margin:10px auto 4px;}
+  .modal-head{padding:8px 18px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);}
+  .modal-head h2{margin:0;font-size:24px;font-weight:700;color:var(--navy);}
+  .modal-close{width:30px;height:30px;border-radius:9px;border:none;background:var(--gray-bg);font-size:22.5px;color:var(--ink-soft);flex-shrink:0;}
+  .modal-body{padding:16px 18px;overflow-y:auto;flex:1;}
+  .modal-foot{padding:12px 18px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);display:flex;gap:9px;}
+
+  .report-textarea{
+    width:100%;min-height:280px;border:1.5px solid var(--line);border-radius:11px;
+    padding:13px;font-size:19.5px;line-height:1.85;font-family:inherit;color:var(--ink);
+    background:#fff;resize:vertical;
+  }
+  .report-textarea:focus{outline:2px solid var(--orange);outline-offset:-1px;}
+  .copy-btn{
+    flex:1;background:var(--navy);color:#fff;border:none;border-radius:11px;padding:13px;
+    font-size:21px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;
+  }
+  .copy-btn.copied{background:var(--green);}
+  .mail-btn{
+    flex:1;background:var(--orange);color:#fff;border:none;border-radius:11px;padding:13px;
+    font-size:21px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;
+  }
+  .mail-btn:active{background:var(--orange-deep);}
+  .ghost-btn{
+    background:#fff;color:var(--ink-soft);border:1.5px solid var(--line);border-radius:11px;padding:13px 16px;font-size:19.5px;font-weight:600;
+  }
+  .task-select-row{
+    display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid var(--line);
+    border-radius:11px;margin-bottom:8px;background:#fff;
+  }
+  .task-select-row.checked{border-color:var(--green);background:var(--green-bg);}
+  .checkbox{
+    width:21px;height:21px;border-radius:6px;border:2px solid var(--line);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;font-weight:800;
+  }
+  .checkbox.on{background:var(--green);border-color:var(--green);}
+  .task-select-row .tsr-name{font-size:19.5px;font-weight:600;color:var(--ink);}
+  .task-select-row .tsr-sub{font-size:16.5px;color:var(--ink-soft);margin-top:1px;}
+
+  .section-label{font-size:17.2px;font-weight:700;color:var(--ink-soft);letter-spacing:0.04em;margin:18px 0 9px;text-transform:uppercase;}
+  .section-label:first-child{margin-top:0;}
+
+  .import-drop{
+    border:2px dashed var(--line);border-radius:13px;padding:26px 16px;text-align:center;color:var(--ink-soft);
+    font-size:18.8px;background:#fff;line-height:1.7;
+  }
+  .import-drop .big{font-size:42px;display:block;margin-bottom:6px;}
+  .file-input-hidden{display:none;}
+  .upload-btn{
+    margin-top:12px;background:var(--orange);color:#fff;border:none;border-radius:9px;padding:10px 18px;
+    font-size:18.8px;font-weight:700;
+  }
+  .sample-link{
+    display:block;text-align:center;margin-top:10px;font-size:17.2px;color:var(--blue);font-weight:600;background:none;border:none;
+  }
+  .csv-hint{font-size:15.8px;color:var(--ink-soft);margin-top:10px;line-height:1.6;background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 11px;}
+  .toast{
+    position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;
+    padding:10px 18px;border-radius:99px;font-size:18.8px;font-weight:600;z-index:60;box-shadow:0 6px 18px rgba(0,0,0,0.25);
+    white-space:nowrap;max-width:90%;text-align:center;
+  }
+  .toast.toast-alert{background:var(--red);}
+
+  /* dup modal */
+  .dup-list-item{
+    background:#fff;border:1.5px solid var(--red);border-radius:10px;padding:10px 12px;margin-bottom:8px;
+  }
+  .dup-list-item .req{font-size:18px;font-weight:800;color:var(--red);}
+  .dup-list-item .meta{font-size:16.5px;color:var(--ink-soft);margin-top:2px;}
+
+  /* gas settings modal */
+  .gas-status-box{
+    background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:13px;font-size:19.5px;
+  }
+  .gas-status-ok{color:var(--green);}
+  .gas-status-error{color:var(--red);}
+  .gas-status-sub{font-size:16.5px;color:var(--ink-soft);font-weight:400;}
+  .gas-hint{font-size:16.5px;color:var(--ink-soft);line-height:1.7;margin-top:12px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px 12px;}
+</style>
+<!-- GASのiframe内でviewportが縮小される問題を修正 -->
+<script>
+(function(){
+  function fixDisplay(){
+    // viewportを再設定
+    var vp = document.querySelector('meta[name="viewport"]');
+    if(vp){
+      vp.setAttribute('content',
+        'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no'
+      );
+    }
+    // GASのiframeの高さを画面全体に設定
+    if(typeof google !== 'undefined' && google.script && google.script.host){
+      try {
+        google.script.host.setHeight(window.screen.height);
+        google.script.host.setWidth(window.screen.width);
+      } catch(e){}
+    }
+    // iframeのdocument自体のzoomを調整
+    var screenW = window.screen.width || window.innerWidth;
+    var docW = document.documentElement.clientWidth;
+    if(screenW > 0 && docW > 0 && docW < screenW * 0.8){
+      var scale = screenW / docW;
+      document.documentElement.style.zoom = Math.min(scale, 2.0);
+    }
+  }
+  fixDisplay();
+  document.addEventListener('DOMContentLoaded', fixDisplay);
+  window.addEventListener('load', fixDisplay);
+})();
+</script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const {useState,useMemo,useRef,useEffect,useCallback} = React;
+
+/* ---------------- 設定値 ---------------- */
+const LOCKER_TYPES = ["out","in","LITE","TOYOTA V1","TOYOTA V2"];
+const STATUS_LIST = ["未着手","部材待ち","保留","作業中","完了"];
+const STATUS_COLOR = {
+  "未着手":{bar:"#A9A38A"},
+  "部材待ち":{bar:"#2F6FA8"},
+  "保留":{bar:"#C24B3B"},
+  "作業中":{bar:"#C9881A"},
+  "完了":{bar:"#1F8A5C"},
+};
+
+const todayStr = () => {
+  const d = new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+};
+const TODAY = todayStr();
+
+function lockerTypeClass(t){
+  if(t==="out") return "type-out";
+  if(t==="in") return "type-in";
+  if(t==="LITE") return "type-LITE";
+  if(t && t.indexOf("TOYOTA")===0) return "type-toyota";
+  return "";
+}
+
+/* ---------------- ダミーデータ（実際のExcel構造に準拠） ----------------
+  Excel実物のセル配置：
+  B1=依頼No. / D1=作業詳細指示(長文) / B2=対応区分(緊急/通常メンテナンス) / B3=依頼日
+  B7=PCJNo. / B8=ロッカー名 / B9=住所 / B10=ロッカータイプ / B11=内在荷物
+  B12=障害内容(短文) / B13=最寄ヤマトセンター / B14=センター住所 / B15=備考
+  「作業担当」「作業日」「実施した作業内容」はアプリ側で入力する項目
+------------------------------------------------------------------- */
+const initialTasks = [
+  {
+    id:"T001", 依頼No:"202606-HK083", メール受信日時:null, 対応:"通常", 依頼日:"2026-06-05",
+    PCJ番号:"PCJ00025", ロッカー名:"東京メトロ東西線　葛西駅",
+    住所:"東京都江戸川区中葛西5-43-11", ロッカータイプ:"in", 内在荷物:"有り",
+    障害内容:"カメラ交換",
+    作業指示:"カメラ交換\n\nカメラを認識しないため。\n\n・到着時の画面は必ず撮影してください\n・復旧後は、メンテナンスモードから\n　全ての扉の開閉確認と\n　荷物情報＝内在荷物の一致の確認\n　スキャナーの動作確認をお願いします\n\n\n※ PCをシャットダウン／再起動する場合は\nUSBキーボードをPCに接続して、Ctrl＋Alt＋Delを押し\nログイン画面で「PC USER」にログインしてからシャットダウン／再起動をしてください\nPC USERログインパスワード：P4ckc1ty\nKiosk　ログインパスワード：kiosk",
+    最寄センター:"ヤマト運輸　葛西臨海営業所（中葛西５丁目）", センター住所:"東京都江戸川区東葛西９丁目３－３１", 備考:"",
+    作業日:TODAY, 作業担当:"佐藤 健", 到着時状況:"", 到着時写真:[], 実施内容:"", 写真:[],
+    status:"未着手"
+  },
+  {
+    id:"T002", 依頼No:"202606-HK098", メール受信日時:null, 対応:"緊急", 依頼日:"2026-06-07",
+    PCJ番号:"PCJ04198", ロッカー名:"ハックドラッグ　江の島店",
+    住所:"神奈川県藤沢市片瀬海岸1-7-30", ロッカータイプ:"out", 内在荷物:"有り",
+    障害内容:"荷物救出",
+    作業指示:"荷物救出\n\n\n・到着時の画面は必ず撮影してください\n・復旧後は、メンテナンスモードから\n　全ての扉の開閉確認と\n　荷物情報＝内在荷物の一致の確認\n　スキャナーの動作確認をお願いします\n\n※ PCをシャットダウン／再起動する場合は\nUSBキーボードをPCに接続して、Ctrl＋Alt＋Delを押し\nログイン画面で「PC USER」にログインしてからシャットダウン／再起動をしてください\nPC USERログインパスワード：P4ckc1ty\nKiosk　ログインパスワード：kiosk",
+    最寄センター:"", センター住所:"", 備考:"",
+    作業日:TODAY, 作業担当:"田中 誠", 到着時状況:"", 到着時写真:[], 実施内容:"", 写真:[],
+    status:"作業中"
+  },
+  {
+    id:"T003", 依頼No:"202606-HK170", メール受信日時:null, 対応:"緊急", 依頼日:"2026-06-13",
+    PCJ番号:"PCJ05225", ロッカー名:"コーポレートヨコハマポートサイド",
+    住所:"神奈川県横浜市神奈川区栄町17-4", ロッカータイプ:"out", 内在荷物:"有り",
+    障害内容:"扉確認",
+    作業指示:"扉確認\n\nボックスNo：26番（2R6）\n症状：開かない\n内在荷物：あり\n荷物情報：あり\n\n・到着時の画面は必ず撮影してください\n・復旧後は、メンテナンスモードから\n　全ての扉の開閉確認と\n　荷物情報＝内在荷物の一致の確認\n　スキャナーの動作確認をお願いします\n\n※ PCをシャットダウン／再起動する場合は\nUSBキーボードをPCに接続して、Ctrl＋Alt＋Delを押し\nログイン画面で「PC USER」にログインしてからシャットダウン／再起動をしてください\nPC USERログインパスワード：P4ckc1ty\nKiosk　ログインパスワード：kiosk",
+    最寄センター:"", センター住所:"", 備考:"",
+    作業日:TODAY, 作業担当:"鈴木 一郎", 到着時状況:"", 到着時写真:[], 実施内容:"", 写真:[],
+    status:"部材待ち"
+  },
+  {
+    id:"T004", 依頼No:"202606-HK209", メール受信日時:null, 対応:"緊急", 依頼日:"2026-06-17",
+    PCJ番号:"PCJ00337", ロッカー名:"京浜急行電鉄　立会川駅",
+    住所:"東京都品川区東大井2-23-1", ロッカータイプ:"out", 内在荷物:"有り",
+    障害内容:"扉確認",
+    作業指示:"扉確認\n\nボックスNo：19番(1R9)\n症状：電磁ロックが傾いている。開閉は問題ない。\n内在荷物：なし\n荷物情報：なし\n\n他のボックスもロック固定ナットの確認をお願いします。\n防水ワッシャー取り付けもお願いします。\n\n防水ワッシャーとナット10個発送します。\n\n・到着時の画面は必ず撮影してください\n・復旧後は、メンテナンスモードから\n　全ての扉の開閉確認と\n　荷物情報＝内在荷物の一致の確認\n　スキャナーの動作確認をお願いします\n\n※ PCをシャットダウン／再起動する場合は\nUSBキーボードをPCに接続して、Ctrl＋Alt＋Delを押し\nログイン画面で「PC USER」にログインしてからシャットダウン／再起動をしてください\nPC USERログインパスワード：P4ckc1ty\nKiosk　ログインパスワード：kiosk",
+    最寄センター:"大井町仙台坂営業所", センター住所:"東京都品川区東大井５丁目７－９", 備考:"",
+    作業日:TODAY, 作業担当:"佐藤 健", 到着時状況:"", 到着時写真:[], 実施内容:"扉確認について現地確認の上、対応完了。動作確認済み。", 写真:[],
+    status:"完了"
+  },
+  {
+    id:"T005", 依頼No:"202606-HK210", メール受信日時:null, 対応:"通常", 依頼日:"2026-06-17",
+    PCJ番号:"PCJ00617", ロッカー名:"ヤマト運輸　八王子くぬぎだセンター",
+    住所:"東京都八王子市椚田町365", ロッカータイプ:"out", 内在荷物:"有り",
+    障害内容:"KEBA機：ファンユニット交換",
+    作業指示:"KEBA機：ファンユニット交換\n\n上部排気口のフィルター交換もお願いいたします。\n\n防水ワッシャー取り付けもお願いいたします。\n\n・到着時の画面は必ず撮影してください\n・復旧後は、メンテナンスモードから\n　全ての扉の開閉確認と\n　荷物情報＝内在荷物の一致の確認\n　スキャナーの動作確認をお願いします\n\n※ PCをシャットダウン／再起動する場合は\nUSBキーボードをPCに接続して、Ctrl＋Alt＋Delを押し\nログイン画面で「PC USER」にログインしてからシャットダウン／再起動をしてください\nPC USERログインパスワード：P4ckc1ty\nKiosk　ログインパスワード：kiosk",
+    最寄センター:"同センター", センター住所:"", 備考:"",
+    作業日:TODAY, 作業担当:"田中 誠", 到着時状況:"", 到着時写真:[], 実施内容:"", 写真:[],
+    status:"保留"
+  },
+  {
+    id:"T006", 依頼No:"202606-HK232", メール受信日時:null, 対応:"通常", 依頼日:"2026-06-19",
+    PCJ番号:"PCJ08517", ロッカー名:"NK005　はんこ工房　都立家政店",
+    住所:"東京都中野区鷺宮1-27-6", ロッカータイプ:"LITE", 内在荷物:"有り",
+    障害内容:"スキャナ確認",
+    作業指示:"スキャナ確認\n\n症状：PC再起動後もスキャナー読み取り履歴なし\n\n・到着時の画面は必ず撮影してください\n・復旧後は、メンテナンスモードから\n　全ての扉の開閉確認と\n　荷物情報＝内在荷物の一致の確認\n　スキャナーの動作確認をお願いします\n\n※ PCをシャットダウン／再起動する場合は\nUSBキーボードをPCに接続して、Ctrl＋Alt＋Delを押し\nログイン画面で「PC USER」にログインしてからシャットダウン／再起動をしてください\nPC USERログインパスワード：P4ckc1ty\nKiosk　ログインパスワード：kiosk",
+    最寄センター:"", センター住所:"", 備考:"",
+    作業日:TODAY, 作業担当:"鈴木 一郎", 到着時状況:"", 到着時写真:[], 実施内容:"", 写真:[],
+    status:"未着手"
+  },
+];
+
+const MAX_PHOTO_BYTES = 1024 * 1024; // 1MB
+
+function dataUrlByteSize(dataUrl){
+  const base64 = dataUrl.split(",")[1] || "";
+  return Math.floor(base64.length * 0.75);
+}
+
+// 1MB以下になるまで、画質→解像度の順に段階的に圧縮する
+function resizeImageToUnder1MB(dataUrl){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      let width = img.width;
+      let height = img.height;
+      const maxDim = 2400;
+      if(width>maxDim || height>maxDim){
+        const ratio = Math.min(maxDim/width, maxDim/height);
+        width = Math.round(width*ratio);
+        height = Math.round(height*ratio);
+      }
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      function attempt(w,h,quality){
+        canvas.width = w;
+        canvas.height = h;
+        ctx.clearRect(0,0,w,h);
+        ctx.drawImage(img,0,0,w,h);
+        const out = canvas.toDataURL("image/jpeg", quality);
+        if(dataUrlByteSize(out) <= MAX_PHOTO_BYTES || (quality<=0.4 && w<=600)){
+          resolve(out);
+          return;
+        }
+        if(quality>0.4){
+          attempt(w,h,quality-0.15);
+        } else {
+          attempt(Math.round(w*0.8), Math.round(h*0.8), 0.7);
+        }
+      }
+      attempt(width,height,0.85);
+    };
+    img.onerror = ()=>resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+// 撮影直後にファイルを小さく縮小する（プレビュー＆保持用の軽量版）
+// 高画素機種（5000万画素超など）はフルサイズを一度にcanvasへ描画すると
+// メモリ確保に失敗することがあるため、2倍刻みの段階的縮小で
+// 各ステップの作業用メモリを抑える（ステップダウンサンプリング）
+async function fileToCompactThumbnail(file){
+  const TARGET_MAX_DIM = 1280;
+  const QUALITY = 0.72;
+
+  let bitmap;
+  try{
+    bitmap = await createImageBitmap(file);
+  }catch(e){
+    bitmap = null;
+  }
+
+  let srcCanvas, srcW, srcH;
+
+  if(bitmap){
+    srcW = bitmap.width;
+    srcH = bitmap.height;
+    srcCanvas = bitmap;
+  } else {
+    // createImageBitmap非対応、または失敗した場合のフォールバック
+    const dataUrl = await new Promise((resolve,reject)=>{
+      const reader = new FileReader();
+      reader.onload = (evt)=>resolve(evt.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const img = await new Promise((resolve,reject)=>{
+      const im = new Image();
+      im.onload = ()=>resolve(im);
+      im.onerror = reject;
+      im.src = dataUrl;
+    });
+    srcW = img.width;
+    srcH = img.height;
+    srcCanvas = img;
+  }
+
+  let curCanvas = srcCanvas;
+  let curW = srcW;
+  let curH = srcH;
+
+  // 2倍刻みで段階的に縮小（一気に大幅縮小しない）
+  while(curW > TARGET_MAX_DIM*2 || curH > TARGET_MAX_DIM*2){
+    const nextW = Math.round(curW/2);
+    const nextH = Math.round(curH/2);
+    const step = document.createElement("canvas");
+    step.width = nextW;
+    step.height = nextH;
+    const stepCtx = step.getContext("2d");
+    stepCtx.drawImage(curCanvas,0,0,nextW,nextH);
+    if(curCanvas.close) curCanvas.close();
+    curCanvas = step;
+    curW = nextW;
+    curH = nextH;
+  }
+
+  // 最終サイズへ仕上げ
+  let finalW = curW, finalH = curH;
+  if(finalW>TARGET_MAX_DIM || finalH>TARGET_MAX_DIM){
+    const ratio = Math.min(TARGET_MAX_DIM/finalW, TARGET_MAX_DIM/finalH);
+    finalW = Math.round(finalW*ratio);
+    finalH = Math.round(finalH*ratio);
+  }
+  const finalCanvas = document.createElement("canvas");
+  finalCanvas.width = finalW;
+  finalCanvas.height = finalH;
+  const finalCtx = finalCanvas.getContext("2d");
+  finalCtx.drawImage(curCanvas,0,0,finalW,finalH);
+  if(curCanvas.close) curCanvas.close();
+
+  return finalCanvas.toDataURL("image/jpeg", QUALITY);
+}
+
+function formatDateJp(dateStr){
+  if(!dateStr) return "-";
+  const [y,m,d]=dateStr.split("-");
+  return `${y}/${m}/${d}`;
+}
+function isToday(dateStr){ return dateStr===TODAY; }
+
+// メール受信日時（ISO文字列等）を「6/17 14:32」のような短い表示に整形する
+// 値が無い場合（GAS連携が未設定の段階）はnullを返す
+function formatMailReceivedAt(value){
+  if(!value) return null;
+  const d = new Date(value);
+  if(isNaN(d.getTime())) return null;
+  const m = d.getMonth()+1;
+  const day = d.getDate();
+  const hh = String(d.getHours()).padStart(2,"0");
+  const mm = String(d.getMinutes()).padStart(2,"0");
+  return `${m}/${day} ${hh}:${mm}`;
+}
+
+/* ---------------- GASスプレッドシート連携 ---------------- */
+// GAS Webアプリのデプロイ先URL。設定画面から変更すると上書きされる
+// （変更内容はブラウザを閉じると失われるため、再設定が必要な場合がある）
+const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbxoj5EEBuyoF-SEo29o1GVdNSywwVEcyx7syJ2JECKtZCO5M8bg3Ez2PKO8MW3XBzwq/exec";
+
+// GASの「依頼一覧」シートの列名 ←→ アプリ内のタスクオブジェクトのキー、の対応表
+const GAS_FIELD_MAP = {
+  依頼No: "依頼No",
+  対応: "対応",
+  依頼日: "依頼日",
+  PCJ番号: "PCJ番号",
+  ロッカー名: "ロッカー名",
+  住所: "住所",
+  ロッカータイプ: "ロッカータイプ",
+  内在荷物: "内在荷物",
+  障害内容: "障害内容",
+  作業指示: "作業指示",
+  最寄センター: "最寄センター",
+  センター住所: "センター住所",
+  備考: "備考",
+};
+
+// アプリ→GASに書き戻す対象の項目（Webアプリ側で入力する項目のみ）
+const GAS_WRITE_FIELDS = ["ステータス","作業担当","作業日","到着時の状況","到着時写真枚数","実施した作業内容","報告用写真枚数"];
+
+/**
+ * GASから取得した1行分のデータ（列名キーのオブジェクト）を、
+ * アプリ内で使うタスクオブジェクトの形に変換する。
+ */
+function gasRowToTask(row, index){
+  const status = (row["ステータス"] || "未着手").trim() || "未着手";
+  const mailDate = row["メール受信日時"] || null;
+
+  // 依頼日はISO文字列で来るので yyyy-MM-dd に整形する
+  let iraiDate = row["依頼日"] || "";
+  if(iraiDate && iraiDate.indexOf("T") !== -1){
+    iraiDate = iraiDate.split("T")[0];
+  }
+  let workDate = row["作業日"] || "";
+  if(workDate && workDate.indexOf("T") !== -1){
+    workDate = workDate.split("T")[0];
+  }
+
+  return {
+    id: "GAS"+(row["依頼No"]||index)+"_"+index,
+    依頼No: row["依頼No"] || "",
+    対応: row["対応"] || "通常",
+    依頼日: iraiDate,
+    メール受信日時: mailDate,
+    PCJ番号: row["PCJ番号"] || "",
+    ロッカー名: row["ロッカー名"] || "",
+    住所: row["住所"] || "",
+    ロッカータイプ: row["ロッカータイプ"] || "",
+    内在荷物: row["内在荷物"] || "",
+    障害内容: row["障害内容"] || "",
+    作業指示: row["作業指示"] || "",
+    最寄センター: row["最寄センター"] || "",
+    センター住所: row["センター住所"] || "",
+    備考: row["備考"] || "",
+    作業日: workDate || TODAY,
+    作業担当: row["作業担当"] || "",
+    到着時状況: row["到着時の状況"] || "",
+    到着時写真: [], // 写真はGAS未連携（テキスト情報のみ連携のため）
+    実施内容: row["実施した作業内容"] || "",
+    写真: [],
+    status: status,
+  };
+}
+
+/**
+ * GASからタスク一覧を取得する。
+ * google.script.run が使える環境（GASのHtmlService経由）では
+ * そちらを優先し、使えない場合はfetchにフォールバックする。
+ */
+async function fetchTasksFromGas(gasUrl){
+  // GASのHtmlService経由で配信されている場合は google.script.run を使う
+  // （fetch経由だとCORSや認証の問題が発生するため）
+  if(typeof google !== "undefined" && google.script && google.script.run){
+    return new Promise((resolve, reject)=>{
+      google.script.run
+        .withSuccessHandler((result)=>{
+          if(!result || !result.success){
+            reject(new Error((result && result.error) || "不明なエラー"));
+            return;
+          }
+          resolve((result.tasks || []).map(gasRowToTask));
+        })
+        .withFailureHandler((err)=>{
+          reject(new Error(String(err.message || err)));
+        })
+        .getTasksForApp();
+    });
+  }
+
+  // フォールバック：fetchで取得（ローカルHTMLファイルとして開いている場合）
+  const res = await fetch(gasUrl + "?action=list", { method: "GET" });
+  if(!res.ok) throw new Error("通信エラー（HTTP " + res.status + "）");
+  const data = await res.json();
+  if(!data.success) throw new Error(data.error || "不明なエラーが発生しました");
+  return (data.tasks || []).map(gasRowToTask);
+}
+
+/**
+ * GASにタスクの更新内容を送信する。
+ * google.script.run が使える環境ではそちらを優先する。
+ */
+async function updateTaskOnGas(gasUrl, task){
+  const fields = {
+    "ステータス": task.status,
+    "作業担当": task.作業担当,
+    "作業日": task.作業日,
+    "到着時の状況": task.到着時状況,
+    "到着時写真枚数": (task.到着時写真||[]).length,
+    "実施した作業内容": task.実施内容,
+    "報告用写真枚数": (task.写真||[]).length,
+  };
+
+  if(typeof google !== "undefined" && google.script && google.script.run){
+    return new Promise((resolve, reject)=>{
+      google.script.run
+        .withSuccessHandler((result)=>{
+          if(!result || !result.success){
+            reject(new Error((result && result.error) || "更新に失敗しました"));
+            return;
+          }
+          resolve(result);
+        })
+        .withFailureHandler((err)=>{
+          reject(new Error(String(err.message || err)));
+        })
+        .updateTaskForApp(task.依頼No, fields);
+    });
+  }
+
+  // フォールバック：fetchで送信
+  const body = JSON.stringify({ action:"update", 依頼No:task.依頼No, fields });
+  const res = await fetch(gasUrl, {
+    method:"POST", headers:{"Content-Type":"text/plain"}, body
+  });
+  if(!res.ok) throw new Error("通信エラー（HTTP " + res.status + "）");
+  const data = await res.json();
+  if(!data.success) throw new Error(data.error || "更新に失敗しました");
+  return data;
+}
+
+function buildReportText(task){
+  return (
+`【作業完了のご報告】
+
+クライアント各位
+
+お世話になっております。
+下記の通り、ロッカーメンテナンス作業が完了いたしましたのでご報告いたします。
+
+■依頼No　　：${task.依頼No}
+■ロッカー名：${task.ロッカー名}
+■PCJ番号　 ：${task.PCJ番号}
+■住所　　　：${task.住所}
+■対応区分　：${task.対応}
+■作業日　　：${formatDateJp(task.作業日)}
+■作業担当　：${task.作業担当}
+
+【障害内容】
+${task.障害内容}
+
+【到着時の状況】
+${task.到着時状況 || "（未記入）"}
+
+【実施した作業内容】
+${task.実施内容 || "（未記入）"}
+
+【作業結果】
+正常動作を確認し、作業完了いたしました。
+
+ご確認のほど、よろしくお願いいたします。`
+  );
+}
+
+function buildMultiReportText(tasks){
+  if(tasks.length===1) return buildReportText(tasks[0]);
+  const header =
+`【作業完了のご報告（${tasks.length}件）】
+
+クライアント各位
+
+お世話になっております。
+本日完了いたしました作業について、まとめてご報告いたします。
+`;
+  const body = tasks.map((t,i)=>(
+`
+─────────────────
+${i+1}. ${t.ロッカー名}
+■依頼No　　：${t.依頼No}
+■PCJ番号　 ：${t.PCJ番号}
+■住所　　　：${t.住所}
+■対応区分　：${t.対応}
+■作業日　　：${formatDateJp(t.作業日)}
+■作業担当　：${t.作業担当}
+【障害内容】${t.障害内容}
+【到着時の状況】${t.到着時状況 || "（未記入）"}
+【実施内容】${t.実施内容 || "（未記入）"}
+【結果】正常動作を確認し、作業完了。`
+  )).join("\n");
+  return header+body+`\n─────────────────\n\n以上、よろしくお願いいたします。`;
+}
+
+/* ---------------- メインアプリ ---------------- */
+function App(){
+  // 本番運用ではサンプルデータを表示せず、起動時はスプレッドシートからの
+  // 読み込みを待つ。GAS接続に失敗した場合のみ、空の状態のまま
+  // 手動でのCSV取込やサンプル追加で対応できるようにしている。
+  const [tasks,setTasks] = useState([]);
+  const [initialLoading,setInitialLoading] = useState(true);
+  const [filter,setFilter] = useState("inprogress");
+  const [sortKey,setSortKey] = useState("date_asc");
+  const [search,setSearch] = useState("");
+  const [expandedId,setExpandedId] = useState(null);
+  const [reportOpen,setReportOpen] = useState(false);
+  const [importOpen,setImportOpen] = useState(false);
+  const [dupModalOpen,setDupModalOpen] = useState(false);
+  const [reportTargetId,setReportTargetId] = useState(null);
+  const [reportText,setReportText] = useState("");
+  const [toast,setToast] = useState({msg:"",alert:false});
+  const fileInputRef = useRef(null);
+
+  // ---- GASスプレッドシート連携 ----
+  const [gasUrl,setGasUrl] = useState(DEFAULT_GAS_URL);
+  const [gasSettingsOpen,setGasSettingsOpen] = useState(false);
+  const [gasStatus,setGasStatus] = useState("idle"); // idle | syncing | ok | error
+  const [gasError,setGasError] = useState("");
+  const [gasLastSync,setGasLastSync] = useState(null);
+  const [usingGasData,setUsingGasData] = useState(false);
+  const pendingUpdatesRef = useRef({}); // {依頼No: task} 送信待ちの更新
+
+  const syncFromGas = useCallback(async (showSyncing)=>{
+    if(!gasUrl){ setInitialLoading(false); return; }
+    if(showSyncing) setGasStatus("syncing");
+    try{
+      const gasTasks = await fetchTasksFromGas(gasUrl);
+      setTasks(prevTasks=>{
+        // ローカルで編集中（送信待ち）のタスクは、サーバーの値で
+        // 上書きしてしまわないよう、ローカルの値を優先して保持する
+        const pending = pendingUpdatesRef.current;
+        return gasTasks.map(gt=>{
+          const p = pending[gt.依頼No];
+          if(p) return {...gt, ...p, id: gt.id};
+          return gt;
+        });
+      });
+      setUsingGasData(true);
+      setGasStatus("ok");
+      setGasError("");
+      setGasLastSync(new Date());
+    }catch(err){
+      setGasStatus("error");
+      setGasError(String(err.message||err));
+    }
+    setInitialLoading(false);
+  },[gasUrl]);
+
+  // 初回読み込み時に一度だけ自動接続を試みる
+  useEffect(()=>{
+    syncFromGas(true);
+    // eslint-disable-next-line
+  },[]);
+
+  // 数分おきの自動再取得（ポーリング）
+  useEffect(()=>{
+    if(!gasUrl) return;
+    const interval = setInterval(()=>{
+      syncFromGas(false);
+    }, 3*60*1000); // 3分おき
+    return ()=>clearInterval(interval);
+  },[gasUrl, syncFromGas]);
+
+  // タスク更新をGASに書き戻す（変更があったタスクのみ、デバウンスして送信）
+  function pushTaskUpdateToGas(task){
+    if(!gasUrl || !usingGasData) return;
+    if(!task.依頼No || task.依頼No.indexOf("IMP")===0) return; // CSV手動取込分は対象外
+    pendingUpdatesRef.current[task.依頼No] = task;
+    updateTaskOnGas(gasUrl, task)
+      .then(()=>{
+        delete pendingUpdatesRef.current[task.依頼No];
+      })
+      .catch((err)=>{
+        setToast({msg:"⚠ スプレッドシートへの保存に失敗しました: "+String(err.message||err), alert:true});
+      });
+  }
+
+  useEffect(()=>{
+    if(toast.msg){
+      const t = setTimeout(()=>setToast({msg:"",alert:false}),2400);
+      return ()=>clearTimeout(t);
+    }
+  },[toast]);
+
+  // 依頼No重複チェック
+  const duplicateGroups = useMemo(()=>{
+    const map = {};
+    tasks.forEach(t=>{
+      if(!t.依頼No) return;
+      if(!map[t.依頼No]) map[t.依頼No]=[];
+      map[t.依頼No].push(t);
+    });
+    return Object.entries(map).filter(([k,v])=>v.length>1);
+  },[tasks]);
+  const duplicateIds = useMemo(()=>{
+    const ids = new Set();
+    duplicateGroups.forEach(([k,v])=>v.forEach(t=>ids.add(t.id)));
+    return ids;
+  },[duplicateGroups]);
+
+  const counts = useMemo(()=>{
+    const c = {all:tasks.length, todo:0, done:0, urgent:0, normal:0, inprogress:0};
+    tasks.forEach(t=>{
+      if(t.status==="作業中") c.inprogress++;
+      if(t.status!=="完了" && (t.status==="未着手"||t.status==="部材待ち"||t.status==="保留")) c.todo++;
+      if(t.status==="完了") c.done++;
+      if(t.対応==="緊急" && t.status!=="完了") c.urgent++;
+      if(t.対応==="通常" && t.status!=="完了") c.normal++;
+    });
+    return c;
+  },[tasks]);
+
+  const filtered = useMemo(()=>{
+    let list = [...tasks];
+    if(filter==="inprogress") list = list.filter(t=>t.status==="作業中");
+    else if(filter==="todo") list = list.filter(t=>t.status==="未着手"||t.status==="部材待ち"||t.status==="保留");
+    else if(filter==="urgent") list = list.filter(t=>t.対応==="緊急" && t.status!=="完了");
+    else if(filter==="normal") list = list.filter(t=>t.対応==="通常" && t.status!=="完了");
+    else if(filter==="done") list = list.filter(t=>t.status==="完了");
+
+    if(search.trim()){
+      const q = search.trim().toLowerCase();
+      list = list.filter(t=>
+        t.ロッカー名.toLowerCase().includes(q) ||
+        t.依頼No.toLowerCase().includes(q) ||
+        t.PCJ番号.toLowerCase().includes(q) ||
+        t.住所.toLowerCase().includes(q)
+      );
+    }
+
+    if(sortKey==="date_asc") list.sort((a,b)=>a.依頼日.localeCompare(b.依頼日));
+    else if(sortKey==="date_desc") list.sort((a,b)=>b.依頼日.localeCompare(a.依頼日));
+    else if(sortKey==="status") list.sort((a,b)=>STATUS_LIST.indexOf(a.status)-STATUS_LIST.indexOf(b.status));
+    else if(sortKey==="urgency") list.sort((a,b)=>(a.対応==="緊急"?0:1)-(b.対応==="緊急"?0:1));
+
+    return list;
+  },[tasks,filter,search,sortKey]);
+
+  const completedTasks = useMemo(()=>tasks.filter(t=>t.status==="完了"),[tasks]);
+  const reportTargetTask = useMemo(()=>tasks.find(t=>t.id===reportTargetId) || null,[tasks,reportTargetId]);
+
+  function updateStatus(id,newStatus){
+    let updatedTask = null;
+    setTasks(prev=>prev.map(t=>{
+      if(t.id!==id) return t;
+      updatedTask = {...t,status:newStatus};
+      return updatedTask;
+    }));
+    if(updatedTask) pushTaskUpdateToGas(updatedTask);
+  }
+
+  function updateTaskField(id,field,value){
+    let updatedTask = null;
+    setTasks(prev=>prev.map(t=>{
+      if(t.id!==id) return t;
+      updatedTask = {...t,[field]:value};
+      return updatedTask;
+    }));
+    if(updatedTask) pushTaskUpdateToGas(updatedTask);
+  }
+
+  // 「作業開始」ボタン：ステータスを作業中にし、作業日に今日の日付をセットする
+  function startWork(id){
+    let updatedTask = null;
+    setTasks(prev=>prev.map(t=>{
+      if(t.id!==id) return t;
+      updatedTask = {...t,status:"作業中",作業日:TODAY};
+      return updatedTask;
+    }));
+    setToast({msg:"作業を開始しました",alert:false});
+    if(updatedTask) pushTaskUpdateToGas(updatedTask);
+  }
+
+  // 「作業完了」ボタン：ステータスを完了にし、そのタスク1件分の完了報告モーダルを開く
+  function completeWork(id){
+    // まずupdatedTaskを確定させてから、stateを一括更新する
+    const currentTask = tasks.find(t=>t.id===id);
+    if(!currentTask) return;
+    const updatedTask = {...currentTask, status:"完了"};
+
+    setTasks(prev=>prev.map(t=> t.id===id ? updatedTask : t));
+    pushTaskUpdateToGas(updatedTask);
+
+    // 報告文を先に生成してからモーダルを開く
+    const text = buildReportText(updatedTask);
+    setReportText(text);
+    setReportTargetId(id);
+    setReportOpen(true);
+  }
+
+  function copyReport(){
+    const text = reportText;
+    const fallbackCopy = ()=>{
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.style.position="fixed"; ta.style.opacity="0";
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      try{ document.execCommand("copy"); }catch(e){}
+      document.body.removeChild(ta);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
+    setToast({msg:"報告文をコピーしました",alert:false});
+  }
+
+  function checkAndAddTasks(newTasks){
+    const existingNos = new Set(tasks.map(t=>t.依頼No));
+    const dupInNew = newTasks.filter(t=>existingNos.has(t.依頼No));
+    setTasks(prev=>[...newTasks,...prev]);
+    if(dupInNew.length>0){
+      setToast({msg:`⚠ 依頼No重複が${dupInNew.length}件あります。確認してください`,alert:true});
+    } else {
+      setToast({msg:`${newTasks.length}件のデータを取り込みました`,alert:false});
+    }
+  }
+
+  function handleCsvFile(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt)=>{
+      try{
+        const text = evt.target.result;
+        const rows = text.split(/\r?\n/).filter(r=>r.trim().length>0);
+        if(rows.length<2){ setToast({msg:"データが見つかりませんでした",alert:true}); return; }
+        const headers = rows[0].split(",").map(h=>h.trim());
+        const newTasks = [];
+        for(let i=1;i<rows.length;i++){
+          const cols = rows[i].split(",").map(c=>c.trim());
+          const row = {};
+          headers.forEach((h,idx)=>{ row[h]=cols[idx]||""; });
+          newTasks.push({
+            id:"IMP"+Date.now()+"_"+i,
+            依頼No:row["依頼No"]||("IMPORT-"+i),
+            メール受信日時:row["メール受信日時"]||new Date().toISOString(),
+            対応:row["対応"]||"通常",
+            依頼日:row["依頼日"]||TODAY,
+            PCJ番号:row["PCJ番号"]||"-",
+            ロッカー名:row["ロッカー名"]||"(名称未設定)",
+            住所:row["住所"]||"-",
+            ロッカータイプ:row["ロッカータイプ"]||"-",
+            内在荷物:row["内在荷物"]||"なし",
+            障害内容:row["障害内容"]||"-",
+            作業指示:row["作業指示"]||row["障害内容"]||"-",
+            最寄センター:row["最寄ヤマトセンター"]||"",
+            センター住所:row["センター住所"]||"",
+            備考:row["備考"]||"",
+            作業日:row["作業日"]||TODAY,
+            作業担当:row["作業担当"]||"未割当",
+            到着時状況:"", 到着時写真:[],
+            実施内容:"", 写真:[],
+            status:"未着手"
+          });
+        }
+        checkAndAddTasks(newTasks);
+        setImportOpen(false);
+      }catch(err){
+        setToast({msg:"読み込みに失敗しました。CSV形式をご確認ください",alert:true});
+      }
+    };
+    reader.readAsText(file,"UTF-8");
+    e.target.value="";
+  }
+
+  function loadMoreDummy(){
+    const extra = [
+      {
+        id:"T00"+Math.floor(Math.random()*9000+1000), 依頼No:"202606-HK225", メール受信日時:null, 対応:"通常", 依頼日:TODAY,
+        PCJ番号:"PCJ01240", ロッカー名:"PUDOステーション 千葉駅前店",
+        住所:"千葉県千葉市中央区新町1-1", ロッカータイプ:"out", 内在荷物:"有り",
+        障害内容:"照明が一部点灯せず、夜間利用時に視認性が低下",
+        作業指示:"照明が一部点灯せず、夜間利用時に視認性が低下。\n内部照明LED交換をお願いします。",
+        最寄センター:"千葉駅前センター", センター住所:"", 備考:"",
+        作業日:TODAY, 作業担当:"佐藤 健", 到着時状況:"", 到着時写真:[], 実施内容:"", 写真:[],
+        status:"未着手"
+      }
+    ];
+    checkAndAddTasks(extra);
+    setImportOpen(false);
+  }
+
+  if(initialLoading){
+    return (
+      <div className="initial-loading-screen">
+        <div className="brand-mark" style={{width:52,height:52,fontSize:22,marginBottom:14}}>P</div>
+        <div className="loading-text">スプレッドシートから依頼データを読み込んでいます…</div>
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <header className="topbar">
+        <div className="topbar-row">
+          <div className="brand">
+            <div className="brand-mark">P</div>
+            <div className="brand-text">
+              <h1>PUDO保守 作業管理</h1>
+              <p>SCHEDULE &amp; TASK TOOL</p>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:7}}>
+            <button className="icon-btn" onClick={()=>setGasSettingsOpen(true)} aria-label="同期設定">
+              {gasStatus==="syncing" ? "⏳" : gasStatus==="ok" ? "🔗" : gasStatus==="error" ? "⚠" : "⚙"}
+            </button>
+            <button className="icon-btn" onClick={()=>setImportOpen(true)} aria-label="データ取込">
+              ⬆
+              {duplicateGroups.length>0 && <span className="badge-dot">!</span>}
+            </button>
+          </div>
+        </div>
+        <div className="stats-row">
+          <button className={"stat-chip "+(filter==="inprogress"?"stat-chip-active":"")} onClick={()=>setFilter("inprogress")}>
+            <div className="n" style={{color:"#C9881A"}}>{counts.inprogress}</div><div className="l">作業中</div>
+          </button>
+          <button className={"stat-chip urgent "+(filter==="urgent"?"stat-chip-active":"")} onClick={()=>setFilter("urgent")}>
+            <div className="n">{counts.urgent}</div><div className="l">緊急</div>
+          </button>
+          <button className={"stat-chip "+(filter==="normal"?"stat-chip-active":"")} onClick={()=>setFilter("normal")}>
+            <div className="n">{counts.normal}</div><div className="l">通常</div>
+          </button>
+          <button className={"stat-chip alert "+(filter==="todo"?"stat-chip-active":"")} onClick={()=>setFilter("todo")}>
+            <div className="n">{counts.todo}</div><div className="l">未着手</div>
+          </button>
+          <button className={"stat-chip "+(filter==="done"?"stat-chip-active":"")} onClick={()=>setFilter("done")}>
+            <div className="n">{counts.done}</div><div className="l">完了</div>
+          </button>
+        </div>
+        {usingGasData && (
+          <div className="sync-status-row">
+            {gasStatus==="syncing" && <span>⏳ 同期中…</span>}
+            {gasStatus==="ok" && <span>🔗 スプレッドシート連携中（最終同期: {gasLastSync?formatMailReceivedAt(gasLastSync.toISOString()):"-"}）</span>}
+            {gasStatus==="error" && <span className="sync-error">⚠ 同期エラー</span>}
+          </div>
+        )}
+      </header>
+
+      <div className="tabbar-wrap">
+        <div className="sortbar">
+          <input className="search-input" placeholder="ロッカー名・依頼No・住所で検索" value={search} onChange={e=>setSearch(e.target.value)} />
+          <button className={"tab tab-all "+(filter==="all"?"active":"")} onClick={()=>setFilter("all")}>すべて</button>
+          <select className="sort-select" value={sortKey} onChange={e=>setSortKey(e.target.value)}>
+            <option value="date_asc">依頼日↑</option>
+            <option value="date_desc">依頼日↓</option>
+            <option value="urgency">緊急優先</option>
+            <option value="status">状態順</option>
+          </select>
+        </div>
+      </div>
+
+      <main className="list">
+        {duplicateGroups.length>0 && (
+          <div className="dup-banner" onClick={()=>setDupModalOpen(true)}>
+            <span className="ic">⚠</span>
+            <span><b>依頼Noの重複が{duplicateGroups.length}件</b> あります。依頼ミスの可能性があるため確認してください。タップで詳細表示。</span>
+          </div>
+        )}
+
+        {filtered.length===0 ? (
+          <div className="empty-state">
+            <span className="big">📭</span>
+            該当するタスクがありません。<br/>フィルター条件を変更してください。
+          </div>
+        ) : filtered.map(task=>(
+          <TaskCard
+            key={task.id}
+            task={task}
+            isDup={duplicateIds.has(task.id)}
+            expanded={expandedId===task.id}
+            onToggleExpand={()=>setExpandedId(expandedId===task.id?null:task.id)}
+            onStatusChange={(s)=>updateStatus(task.id,s)}
+            onFieldChange={(field,val)=>updateTaskField(task.id,field,val)}
+            onStartWork={()=>startWork(task.id)}
+            onCompleteWork={()=>completeWork(task.id)}
+          />
+        ))}
+      </main>
+
+      <div className="fab-wrap">
+        <div className="fab-bar">
+          <button className="fab-btn fab-secondary fab-full" onClick={()=>setImportOpen(true)}>
+            ⬆ データ取込
+          </button>
+        </div>
+      </div>
+
+      {reportOpen && reportTargetTask && (
+        <ReportModal
+          task={reportTargetTask}
+          reportText={reportText}
+          setReportText={setReportText}
+          onCopy={copyReport}
+          onClose={()=>setReportOpen(false)}
+        />
+      )}
+
+      {importOpen && (
+        <ImportModal
+          onClose={()=>setImportOpen(false)}
+          onFileSelected={handleCsvFile}
+          onLoadDummy={loadMoreDummy}
+          fileInputRef={fileInputRef}
+        />
+      )}
+
+      {dupModalOpen && (
+        <DupModal
+          groups={duplicateGroups}
+          onClose={()=>setDupModalOpen(false)}
+        />
+      )}
+
+      {gasSettingsOpen && (
+        <GasSettingsModal
+          gasUrl={gasUrl}
+          setGasUrl={setGasUrl}
+          gasStatus={gasStatus}
+          gasError={gasError}
+          gasLastSync={gasLastSync}
+          onManualSync={()=>syncFromGas(true)}
+          onClose={()=>setGasSettingsOpen(false)}
+        />
+      )}
+
+      {toast.msg && <div className={"toast "+(toast.alert?"toast-alert":"")}>{toast.msg}</div>}
+    </div>
+  );
+}
+
+function TaskCard({task,isDup,expanded,onToggleExpand,onStatusChange,onFieldChange,onStartWork,onCompleteWork}){
+  const barColor = STATUS_COLOR[task.status].bar;
+  const isUrgent = task.対応==="緊急";
+  return (
+    <div className={"task-card status-"+task.status+(isUrgent?" is-urgent":"")}>
+      <div className="accent-bar" style={{background:barColor}}></div>
+      <div className="task-top">
+        <div className="task-meta-left">
+          <div className="req-no-row">
+            <span className="req-no">{task.依頼No}</span>
+            {isDup && <span className="dup-tag">重複</span>}
+          </div>
+          <div className="locker-name">{task.ロッカー名}</div>
+          <div className="pcj-row">
+            <span className="pcj">{task.PCJ番号}</span>
+            <span className={"locker-type-badge "+lockerTypeClass(task.ロッカータイプ)}>{task.ロッカータイプ}</span>
+          </div>
+        </div>
+        <div className="badge-col">
+          <span className={"urgency-badge urgency-"+task.対応}>{task.対応}</span>
+        </div>
+      </div>
+
+      <div className="task-address"><span className="ic">📍</span><span>{task.住所}</span></div>
+
+      <div className="task-trouble"><b>障害内容：</b>{task.障害内容}</div>
+
+      <div className="task-info-grid">
+        <span>作業日：<b>{formatDateJp(task.作業日)}</b></span>
+        <span>担当：<b>{task.作業担当}</b></span>
+        <span>内在荷物：<b>{task.内在荷物}</b></span>
+      </div>
+
+      <div className="status-summary-row">
+        <span className={"current-status-tag cs-"+task.status}>{task.status}</span>
+        {(task.status==="未着手" || task.status==="部材待ち" || task.status==="保留") && (
+          <div className="hold-btns">
+            <button
+              className={"hold-pill "+(task.status==="部材待ち"?"hold-active":"")}
+              onClick={()=>onStatusChange(task.status==="部材待ち" ? "未着手" : "部材待ち")}
+            >部材待ち</button>
+            <button
+              className={"hold-pill "+(task.status==="保留"?"hold-active":"")}
+              onClick={()=>onStatusChange(task.status==="保留" ? "未着手" : "保留")}
+            >保留</button>
+          </div>
+        )}
+      </div>
+
+      <div className="task-foot">
+        <span className="task-foot-meta">
+          依頼日：{formatDateJp(task.依頼日)}
+          {" / メール受信："}
+          {formatMailReceivedAt(task.メール受信日時) || <span className="mail-time-unset">未連携</span>}
+        </span>
+        <button className="expand-btn" onClick={onToggleExpand}>
+          {expanded ? "閉じる ▲" : "詳細・作業指示を見る ▼"}
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="detail-panel">
+          {task.status!=="作業中" && task.status!=="完了" && (
+            <button className="start-work-btn" onClick={onStartWork}>
+              ▶ 作業開始
+            </button>
+          )}
+          {task.status==="作業中" && (
+            <div className="working-banner">🔧 作業中（作業日：{formatDateJp(task.作業日)}）</div>
+          )}
+          {task.status==="完了" && (
+            <div className="completed-banner">✅ 作業完了済み（作業日：{formatDateJp(task.作業日)}）</div>
+          )}
+
+          <div className="detail-row"><div className="k">最寄センター</div><div className="v">{task.最寄センター || "-"}</div></div>
+          {task.センター住所 && <div className="detail-row"><div className="k">センター住所</div><div className="v">{task.センター住所}</div></div>}
+          {task.備考 && <div className="detail-row"><div className="k">備考</div><div className="v">{task.備考}</div></div>}
+
+          <span className="field-label">作業指示（クライアントからの詳細）</span>
+          <div className="instruction-box">{task.作業指示}</div>
+
+          <span className="field-label">作業担当</span>
+          <input
+            className="text-field"
+            value={task.作業担当}
+            onChange={(e)=>onFieldChange("作業担当", e.target.value)}
+            placeholder="担当者名を入力"
+          />
+
+          <span className="field-label">作業日</span>
+          <input
+            type="date"
+            className="text-field"
+            value={task.作業日}
+            onChange={(e)=>onFieldChange("作業日", e.target.value)}
+          />
+
+          <span className="field-label">到着時の状況</span>
+          <textarea
+            className="textarea-field"
+            value={task.到着時状況}
+            onChange={(e)=>onFieldChange("到着時状況", e.target.value)}
+            placeholder="現場到着時の状況を記入してください（完了報告に反映されます）"
+          />
+          <span className="field-label">
+            到着時の写真
+            {task.到着時写真.length>0 && <span className="photo-count-tag">{task.到着時写真.length}枚</span>}
+          </span>
+          <PhotoPicker
+            photos={task.到着時写真}
+            onChange={(photos)=>onFieldChange("到着時写真", photos)}
+          />
+
+          <span className="field-label">実施した作業内容</span>
+          <textarea
+            className="textarea-field"
+            value={task.実施内容}
+            onChange={(e)=>onFieldChange("実施内容", e.target.value)}
+            placeholder="現場で実施した作業内容を記入してください（完了報告に反映されます）"
+          />
+
+          <span className="field-label">
+            報告用写真
+            {task.写真.length>0 && <span className="photo-count-tag">{task.写真.length}枚</span>}
+          </span>
+          <PhotoPicker
+            photos={task.写真}
+            onChange={(photos)=>onFieldChange("写真", photos)}
+          />
+
+          {task.status!=="完了" && (
+            <button className="complete-work-btn" onClick={onCompleteWork}>
+              ✓ 作業完了
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PhotoPicker({photos,onChange}){
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const [processing,setProcessing] = useState(false);
+  const [error,setError] = useState("");
+
+  async function handleFiles(e){
+    const files = Array.from(e.target.files || []);
+    if(files.length===0) return;
+    setError("");
+    setProcessing(true);
+    const newPhotos = [];
+    let failCount = 0;
+    for(const file of files){
+      try{
+        const compact = await fileToCompactThumbnail(file);
+        newPhotos.push({id:"P"+Date.now()+"_"+Math.random().toString(36).slice(2,7), url:compact, name:file.name});
+      }catch(err){
+        console.error("photo resize error:", err);
+        failCount++;
+      }
+    }
+    if(newPhotos.length>0){
+      onChange([...photos,...newPhotos]);
+    }
+    if(failCount>0){
+      setError(`${failCount}枚の写真を処理できませんでした。「ギャラリーから選択」もお試しください。`);
+    }
+    setProcessing(false);
+    e.target.value="";
+  }
+
+  function removePhoto(id){
+    onChange(photos.filter(p=>p.id!==id));
+  }
+
+  return (
+    <div>
+      <div className="photo-strip">
+        {photos.map(p=>(
+          <div className="photo-thumb" key={p.id}>
+            <img src={p.url} alt={p.name} />
+            <button className="remove-btn" onClick={()=>removePhoto(p.id)}>✕</button>
+          </div>
+        ))}
+        <button className="photo-add-btn" onClick={()=>cameraInputRef.current.click()} disabled={processing}>
+          <span className="plus">{processing ? "⏳" : "📷"}</span>
+          <span>{processing ? "処理中" : "撮影"}</span>
+        </button>
+        <button className="photo-add-btn" onClick={()=>galleryInputRef.current.click()} disabled={processing}>
+          <span className="plus">{processing ? "⏳" : "🖼"}</span>
+          <span>{processing ? "処理中" : "ギャラリー"}</span>
+        </button>
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="file-input-hidden"
+          onChange={handleFiles}
+        />
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="file-input-hidden"
+          onChange={handleFiles}
+        />
+      </div>
+      {error && <div className="photo-error-text">{error}</div>}
+    </div>
+  );
+}
+
+function ReportModal({task,reportText,setReportText,onCopy,onClose}){
+  const [copied,setCopied] = useState(false);
+  const [mailTo,setMailTo] = useState("kazuyuki.sudo@packcity.co.jp");
+  const [mailSubject,setMailSubject] = useState("");
+
+  function taskAllPhotos(t){
+    return [...(t.到着時写真||[]), ...(t.写真||[])];
+  }
+
+  const totalPhotos = useMemo(()=>taskAllPhotos(task).length, [task]);
+
+  useEffect(()=>{
+    setMailSubject(`【作業完了報告】${task.PCJ番号}　${task.ロッカー名}`);
+  },[task.id]);
+
+  function handleCopy(){
+    onCopy();
+    setCopied(true);
+    setTimeout(()=>setCopied(false),1800);
+  }
+
+  function handleOpenMail(){
+    const subject = encodeURIComponent(mailSubject);
+    const body = encodeURIComponent(reportText);
+    const mailtoUrl = `mailto:${mailTo}?subject=${subject}&body=${body}`;
+    // GASのHtmlService(iframe)環境ではwindow.location.hrefが動かないため
+    // window.openを使う。それも動かない場合はgoogle.script.run経由で開く
+    if(typeof google !== "undefined" && google.script && google.script.host){
+      google.script.host.openUrl ? google.script.host.openUrl(mailtoUrl) : window.open(mailtoUrl, "_blank");
+    } else {
+      window.open(mailtoUrl, "_blank") || (window.location.href = mailtoUrl);
+    }
+  }
+
+  const [saving,setSaving] = useState(false);
+  const [saveProgress,setSaveProgress] = useState({done:0,total:0});
+
+  function triggerDownload(dataUrl,filename){
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  async function saveOnePhoto(photo){
+    const resized = await resizeImageToUnder1MB(photo.url);
+    const filename = (photo.name || "photo.jpg").replace(/\.[^.]+$/,"") + "_resized.jpg";
+    triggerDownload(resized, filename);
+  }
+
+  async function saveAllPhotos(){
+    const allPhotos = taskAllPhotos(task);
+    if(allPhotos.length===0) return;
+    setSaving(true);
+    setSaveProgress({done:0,total:allPhotos.length});
+    for(let i=0;i<allPhotos.length;i++){
+      const p = allPhotos[i];
+      const resized = await resizeImageToUnder1MB(p.url);
+      const filename = `${task.ロッカー名}_${i+1}_resized.jpg`.replace(/[\\/:*?"<>|]/g,"");
+      triggerDownload(resized, filename);
+      setSaveProgress({done:i+1,total:allPhotos.length});
+      await new Promise(r=>setTimeout(r,350));
+    }
+    setSaving(false);
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <div className="modal-sheet">
+        <div className="modal-handle"></div>
+        <div className="modal-head">
+          <h2>作業完了報告を作成</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="section-label">対象タスク</div>
+          <div className="task-select-row checked">
+            <div className="checkbox on">✓</div>
+            <div>
+              <div className="tsr-name">{task.ロッカー名}{totalPhotos>0 && <span className="photo-count-tag">📷{totalPhotos}</span>}</div>
+              <div className="tsr-sub">{task.依頼No}　{formatDateJp(task.作業日)}　{task.作業担当}</div>
+            </div>
+          </div>
+
+          <div className="section-label">メール宛先・件名</div>
+          <div className="mail-field">
+            <label>宛先（To）</label>
+            <input className="text-field" value={mailTo} onChange={(e)=>setMailTo(e.target.value)} placeholder="送信先メールアドレス" />
+          </div>
+          <div className="mail-field">
+            <label>件名</label>
+            <input className="text-field" value={mailSubject} onChange={(e)=>setMailSubject(e.target.value)} placeholder="件名" />
+          </div>
+
+          <div className="section-label">報告テキスト（編集可）</div>
+          <textarea
+            className="report-textarea"
+            value={reportText}
+            onChange={(e)=>setReportText(e.target.value)}
+          />
+
+          {totalPhotos>0 && (
+            <div className="mail-photo-section">
+              <div className="mail-step-banner">
+                <span className="ic">💡</span>
+                <span><b>写真はメールに自動添付されません。</b>「全ての写真を端末に保存」で1MB以下にリサイズしてギャラリーに保存し、メールアプリ側で手動添付してください。</span>
+              </div>
+              <div style={{marginBottom:10}}>
+                {task.到着時写真 && task.到着時写真.length>0 && (
+                  <div style={{marginBottom:6}}>
+                    <div className="photo-sub-label">到着時</div>
+                    <div className="photo-strip">
+                      {task.到着時写真.map(p=>(
+                        <div className="photo-thumb" key={p.id} onClick={()=>saveOnePhoto(p)}>
+                          <img src={p.url} alt={p.name} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {task.写真 && task.写真.length>0 && (
+                  <div>
+                    <div className="photo-sub-label">作業後</div>
+                    <div className="photo-strip">
+                      {task.写真.map(p=>(
+                        <div className="photo-thumb" key={p.id} onClick={()=>saveOnePhoto(p)}>
+                          <img src={p.url} alt={p.name} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <button className="save-all-btn" onClick={saveAllPhotos} disabled={saving}>
+                {saving
+                  ? `⏳ リサイズ・保存中… (${saveProgress.done}/${saveProgress.total})`
+                  : "⬇ 全ての写真を端末に保存（1MB以下にリサイズ）"}
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="modal-foot">
+          <button className={"copy-btn "+(copied?"copied":"")} onClick={handleCopy}>
+            {copied ? "✓ コピー済" : "📋 文章コピー"}
+          </button>
+          <button className="mail-btn" onClick={handleOpenMail}>
+            ✉ メールで送る
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ImportModal({onClose,onFileSelected,onLoadDummy,fileInputRef}){
+  return (
+    <div className="modal-backdrop" onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <div className="modal-sheet">
+        <div className="modal-handle"></div>
+        <div className="modal-head">
+          <h2>作業依頼データの取込</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="import-drop">
+            <span className="big">📄</span>
+            クライアントから届くExcelをCSV形式で<br/>書き出してから取り込んでください。
+            <br/>
+            <button className="upload-btn" onClick={()=>fileInputRef.current.click()}>CSVファイルを選択</button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="file-input-hidden"
+              onChange={onFileSelected}
+            />
+          </div>
+          <div className="csv-hint">
+            1行目はヘッダー行とし、以下の列名を含めてください：<br/>
+            依頼No, 対応, 依頼日, PCJ番号, ロッカー名, 住所, ロッカータイプ, 内在荷物, 障害内容, 作業指示, 最寄ヤマトセンター, センター住所, 備考<br/><br/>
+            ※依頼Noが既存データと重複する場合は自動でアラート表示されます。
+          </div>
+          <button className="sample-link" onClick={onLoadDummy}>または、サンプルデータを1件追加して試す →</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GasSettingsModal({gasUrl,setGasUrl,gasStatus,gasError,gasLastSync,onManualSync,onClose}){
+  const [inputUrl,setInputUrl] = useState(gasUrl);
+
+  function handleSave(){
+    setGasUrl(inputUrl.trim());
+    onClose();
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <div className="modal-sheet">
+        <div className="modal-handle"></div>
+        <div className="modal-head">
+          <h2>スプレッドシート連携設定</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="section-label">接続状況</div>
+          <div className="gas-status-box">
+            {gasStatus==="syncing" && <div>⏳ 同期中…</div>}
+            {gasStatus==="ok" && (
+              <div className="gas-status-ok">
+                🔗 接続中<br/>
+                <span className="gas-status-sub">最終同期: {gasLastSync ? gasLastSync.toLocaleString("ja-JP") : "-"}</span>
+              </div>
+            )}
+            {gasStatus==="error" && (
+              <div className="gas-status-error">
+                ⚠ 接続エラー<br/>
+                <span className="gas-status-sub">{gasError}</span>
+              </div>
+            )}
+            {gasStatus==="idle" && <div>未接続</div>}
+          </div>
+
+          <div className="section-label">GAS WebアプリURL</div>
+          <textarea
+            className="textarea-field"
+            style={{minHeight:70,fontSize:11}}
+            value={inputUrl}
+            onChange={(e)=>setInputUrl(e.target.value)}
+            placeholder="https://script.google.com/macros/s/.../exec"
+          />
+          <div className="gas-hint">
+            このアプリは、ここで設定したURL（Google Apps Scriptのウェブアプリ）と
+            通信して、メールから自動取込した依頼データを取得し、ステータスや作業内容の
+            変更をスプレッドシートに書き戻します。約3分おきに自動で再取得します。
+            <br/><br/>
+            初回アクセス時、Googleアカウントへのログインを求められる場合があります。
+            許可されたアカウントでログインしてください。
+          </div>
+        </div>
+        <div className="modal-foot">
+          <button className="ghost-btn" onClick={onManualSync}>🔄 今すぐ同期</button>
+          <button className="copy-btn" onClick={handleSave}>保存して閉じる</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DupModal({groups,onClose}){
+  return (
+    <div className="modal-backdrop" onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <div className="modal-sheet">
+        <div className="modal-handle"></div>
+        <div className="modal-head">
+          <h2>⚠ 依頼No重複の確認</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="dup-banner" style={{marginBottom:16}}>
+            <span className="ic">⚠</span>
+            <span>同じ依頼Noが複数存在します。クライアント側の依頼ミス、または重複送信の可能性があります。内容を確認し、必要であれば一方を削除・統合してください。</span>
+          </div>
+          {groups.map(([reqNo,items])=>(
+            <div key={reqNo} style={{marginBottom:14}}>
+              <div className="section-label" style={{margin:"0 0 8px"}}>依頼No：{reqNo}（{items.length}件）</div>
+              {items.map(t=>(
+                <div key={t.id} className="dup-list-item">
+                  <div className="req">{t.ロッカー名}</div>
+                  <div className="meta">{t.PCJ番号}　{t.住所}</div>
+                  <div className="meta">作業日：{formatDateJp(t.作業日)}　ステータス：{t.status}</div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
