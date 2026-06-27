@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PUDO保守">
+<link rel="apple-touch-icon" href="PUDO_500x500.png">
+<link rel="icon" type="image/png" href="PUDO_500x500.png">
 <title>PUDO保守 作業管理</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -1104,7 +1108,7 @@ function App(){
   if(initialLoading){
     return (
       <div className="initial-loading-screen">
-        <div className="brand-mark" style={{width:52,height:52,fontSize:22,marginBottom:14}}>P</div>
+        <img src="PUDO_500x500.png" style={{width:52,height:52,borderRadius:12,marginBottom:14,objectFit:"cover"}} alt="PUDO" />
         <div className="loading-text">スプレッドシートから依頼データを読み込んでいます…</div>
         <div className="loading-spinner"></div>
       </div>
@@ -1116,7 +1120,7 @@ function App(){
       <header className="topbar">
         <div className="topbar-row">
           <div className="brand">
-            <div className="brand-mark">P</div>
+            <img src="PUDO_500x500.png" className="brand-mark" style={{objectFit:"cover"}} alt="PUDO" />
             <div className="brand-text">
               <h1>PUDO保守 作業管理</h1>
               <p>SCHEDULE &amp; TASK TOOL</p>
