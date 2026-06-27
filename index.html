@@ -1454,17 +1454,18 @@ function ReportModal({task,reportText,setReportText,onCopy,onClose}){
 
     let url;
     if(type === "gmail"){
-      // GmailアプリのURLスキーム
-      url = `googlegmail://co?to=${to}&subject=${subject}&body=${body}`;
+      // GmailウェブアプリのURL（Android・iPhone両対応）
+      // ブラウザで開くためアプリの種類に関係なく動作する
+      url = `https://mail.google.com/mail/?view=cm&to=${to}&su=${subject}&body=${body}`;
     } else {
-      // YahooメールアプリのURLスキーム（またはmailto:でデフォルトメーラー）
-      url = `mailto:${mailTo}?subject=${subject}&body=${body}`;
+      // YahooメールウェブアプリのURL（Android・iPhone両対応）
+      url = `https://compose.mail.yahoo.co.jp/?To=${to}&Subject=${subject}&Body=${body}`;
     }
 
     if(typeof google !== "undefined" && google.script && google.script.host){
       google.script.host.openUrl ? google.script.host.openUrl(url) : window.open(url, "_blank");
     } else {
-      window.open(url, "_blank") || (window.location.href = url);
+      window.open(url, "_blank");
     }
   }
 
