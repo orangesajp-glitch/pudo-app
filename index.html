@@ -559,7 +559,7 @@ function formatMailReceivedAt(value){
 const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbxOXvDzeG9cV6bF_xNXc4C2eFJhZtlBP15ETbm4RtXopEr5o4JFrJgDP4hSmQrHDsz3bA/exec";
 
 // 作業者リストのデフォルト（初回起動時のみ使用）
-const DEFAULT_WORKERS = ["山崎","新井","hi_ho_world_777"];
+const DEFAULT_WORKERS = ["新井","鈴木","山崎"];
 
 // 作業内容テンプレートのデフォルト（初回起動時のみ使用）
 const DEFAULT_TEMPLATES = [
@@ -571,9 +571,19 @@ const DEFAULT_TEMPLATES = [
 // localStorageのキー
 const LS_WORKERS_KEY = "pudo_workers";
 const LS_TEMPLATES_KEY = "pudo_templates";
+const LS_VERSION_KEY = "pudo_list_version";
+const CURRENT_LIST_VERSION = "2"; // デフォルト値を変更したらこの番号を上げる
 
 function loadFromLS(key, defaultVal){
   try{
+    // バージョンが古い（または未設定）場合はデフォルト値を使用して更新
+    const version = localStorage.getItem(LS_VERSION_KEY);
+    if(version !== CURRENT_LIST_VERSION){
+      localStorage.setItem(LS_VERSION_KEY, CURRENT_LIST_VERSION);
+      localStorage.setItem(LS_WORKERS_KEY, JSON.stringify(DEFAULT_WORKERS));
+      localStorage.setItem(LS_TEMPLATES_KEY, JSON.stringify(DEFAULT_TEMPLATES));
+      return key === LS_WORKERS_KEY ? DEFAULT_WORKERS : DEFAULT_TEMPLATES;
+    }
     const v = localStorage.getItem(key);
     return v ? JSON.parse(v) : defaultVal;
   }catch(e){ return defaultVal; }
