@@ -1455,11 +1455,11 @@ function ReportModal({task,reportText,setReportText,onCopy,onClose}){
     let url;
     if(type === "gmail"){
       // GmailウェブアプリのURL（Android・iPhone両対応）
-      // ブラウザで開くためアプリの種類に関係なく動作する
-      url = `https://mail.google.com/mail/?view=cm&to=${to}&su=${subject}&body=${body}`;
+      // パラメータ名：to, su（subject）, body
+      url = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
     } else {
       // YahooメールウェブアプリのURL（Android・iPhone両対応）
-      url = `https://compose.mail.yahoo.co.jp/?To=${to}&Subject=${subject}&Body=${body}`;
+      url = `https://compose.mail.yahoo.co.jp/?to=${to}&subject=${subject}&body=${body}`;
     }
 
     if(typeof google !== "undefined" && google.script && google.script.host){
