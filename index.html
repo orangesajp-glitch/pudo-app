@@ -956,9 +956,25 @@ function App(){
         // ローカルで編集中（送信待ち）のタスクは、サーバーの値で
         // 上書きしてしまわないよう、ローカルの値を優先して保持する
         const pending = pendingUpdatesRef.current;
+
+        // ローカルの現在のタスク状態をマップ化（依頼No→task）
+        const localMap = {};
+        prevTasks.forEach(t=>{ if(t.依頼No) localMap[t.依頼No] = t; });
+
         return gasTasks.map(gt=>{
+          // 送信待ちのデータはローカルを優先
           const p = pending[gt.依頼No];
           if(p) return {...gt, ...p, id: gt.id};
+
+          // ローカルで「作業中」のタスクは、スプレッドシート側が
+          // まだ反映されていなくてもローカルのステータスを維持する
+          // （作業開始→GAS書き込み完了前に自動同期が走ると
+          //   「未着手」に戻ってしまう問題の対策）
+          const local = localMap[gt.依頼No];
+          if(local && local.status === "作業中" && gt.status !== "作業中"){
+            return {...gt, status:"作業中", 作業日: local.作業日, id: gt.id};
+          }
+
           return gt;
         });
       });
