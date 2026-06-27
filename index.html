@@ -1103,28 +1103,42 @@ function App(){
   }
 
   // 「作業開始」ボタン：ステータスを作業中にし、作業日に今日の日付をセットする
-  function startWork(id){
-    let updatedTask = null;
-    setTasks(prev=>prev.map(t=>{
-      if(t.id!==id) return t;
-      updatedTask = {...t,status:"作業中",作業日:TODAY};
-      return updatedTask;
-    }));
-    setToast({msg:"作業を開始しました",alert:false});
-    if(updatedTask) pushTaskUpdateToGas(updatedTask);
+  // 「作業開始」ボタン：ステータスを作業中にし、作業日に今日の日付をセットする
+  // GASへの書き込みが完了するまで待ってから画面を更新する（即時保存）
+  async function startWork(id){
+    const currentTask = tasks.find(t=>t.id===id);
+    if(!currentTask) return;
+    const updatedTask = {...currentTask, status:"作業中", 作業日:TODAY};
+
+    // まずローカルのstateを更新（即座に画面に反映）
+    setTasks(prev=>prev.map(t=> t.id===id ? updatedTask : t));
+
+    // GASへ即時書き込み（完了を待つ）
+    try{
+      await updateTaskOnGas(gasUrl, updatedTask);
+      setToast({msg:"作業を開始しました（スプレッドシートに保存済み）",alert:false});
+    }catch(err){
+      // 書き込みに失敗した場合はエラーを表示（ローカルの状態は維持）
+      setToast({msg:"⚠ スプレッドシートへの保存に失敗しました。再度お試しください。",alert:true});
+    }
   }
 
   // 「作業完了」ボタン：ステータスを完了にし、そのタスク1件分の完了報告モーダルを開く
-  function completeWork(id){
-    // まずupdatedTaskを確定させてから、stateを一括更新する
+  async function completeWork(id){
     const currentTask = tasks.find(t=>t.id===id);
     if(!currentTask) return;
     const updatedTask = {...currentTask, status:"完了"};
 
     setTasks(prev=>prev.map(t=> t.id===id ? updatedTask : t));
-    pushTaskUpdateToGas(updatedTask);
 
-    // 報告文を先に生成してからモーダルを開く
+    // GASへ即時書き込み
+    try{
+      await updateTaskOnGas(gasUrl, updatedTask);
+    }catch(err){
+      setToast({msg:"⚠ スプレッドシートへの保存に失敗しました。",alert:true});
+    }
+
+    // 報告文を生成してモーダルを開く
     const text = buildReportText(updatedTask);
     setReportText(text);
     setReportTargetId(id);
