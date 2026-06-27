@@ -280,50 +280,9 @@
   .text-field:focus{outline:2px solid var(--orange);outline-offset:-1px;}
   .field-label{font-size:16.5px;color:var(--ink-soft);font-weight:600;margin-top:10px;display:block;}
 
-  /* ---- Photo attach ---- */
-  .photo-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
-  .photo-thumb{
-    width:64px;height:64px;border-radius:9px;overflow:hidden;position:relative;
-    border:1px solid var(--line);background:#fff;flex-shrink:0;
-  }
-  .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-  .photo-thumb .remove-btn{
-    position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:99px;
-    background:rgba(16,36,62,0.78);color:#fff;border:none;font-size:16.5px;
-    display:flex;align-items:center;justify-content:center;line-height:1;
-  }
-  .photo-add-btn{
-    width:64px;height:64px;border-radius:9px;border:1.5px dashed var(--line);background:#FBFAF7;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    color:var(--ink-soft);font-size:15px;gap:2px;flex-shrink:0;
-  }
-  .photo-add-btn:disabled{opacity:0.6;}
-  .photo-add-btn .plus{font-size:27px;line-height:1;color:var(--orange-deep);}
-  .photo-error-text{font-size:16.5px;color:var(--red);margin-top:6px;}
-  .photo-count-tag{
-    font-size:14.2px;font-weight:700;color:var(--green);background:var(--green-bg);
-    border-radius:6px;padding:1.5px 6px;margin-left:5px;
-  }
-
   /* ---- Mail send modal ---- */
   .mail-field{margin-bottom:12px;}
   .mail-field label{font-size:16.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:4px;}
-  .mail-photo-section{
-    background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px;margin-top:14px;
-  }
-  .mail-photo-task-name{font-size:18px;font-weight:700;color:var(--navy);margin-bottom:6px;}
-  .photo-sub-label{font-size:15px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;}
-  .mail-step-banner{
-    background:var(--blue-bg);border:1px solid var(--blue);border-radius:10px;padding:10px 12px;
-    font-size:17.2px;color:var(--blue);line-height:1.7;margin-bottom:14px;display:flex;gap:8px;
-  }
-  .mail-step-banner .ic{flex-shrink:0;}
-  .mail-step-banner b{font-weight:800;}
-  .save-all-btn{
-    width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;padding:11px;
-    font-size:18.8px;font-weight:700;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px;
-  }
-  .save-all-btn:disabled{background:#A9C9B8;}
 
   /* ---- FAB / Report bottom sheet trigger ---- */
   .fab-wrap{position:fixed;left:0;right:0;bottom:0;max-width:100%;margin:0 auto;z-index:40;pointer-events:none;}
@@ -515,7 +474,7 @@ const initialTasks = [
     障害内容:"カメラ交換",
     作業指示:"カメラ交換\n\nカメラを認識しないため。\n\n・到着時の画面は必ず撮影してください\n・復旧後は、メンテナンスモードから\n　全ての扉の開閉確認と\n　荷物情報＝内在荷物の一致の確認\n　スキャナーの動作確認をお願いします\n\n\n※ PCをシャットダウン／再起動する場合は\nUSBキーボードをPCに接続して、Ctrl＋Alt＋Delを押し\nログイン画面で「PC USER」にログインしてからシャットダウン／再起動をしてください\nPC USERログインパスワード：P4ckc1ty\nKiosk　ログインパスワード：kiosk",
     最寄センター:"ヤマト運輸　葛西臨海営業所（中葛西５丁目）", センター住所:"東京都江戸川区東葛西９丁目３－３１", 備考:"",
-    作業日:TODAY, 作業担当:"佐藤 健", 到着時状況:"", 到着時写真:[], 実施内容:"", 写真:[],
+    作業日:TODAY, 作業担当:"佐藤 健", 到着時状況:"", 実施内容:"",
     status:"未着手"
   },
   {
@@ -525,7 +484,7 @@ const initialTasks = [
     障害内容:"荷物救出",
     作業指示:"荷物救出\n\n\n・到着時の画面は必ず撮影してください\n・復旧後は、メンテナンスモードから\n　全ての扉の開閉確認と\n　荷物情報＝内在荷物の一致の確認\n　スキャナーの動作確認をお願いします\n\n※ PCをシャットダウン／再起動する場合は\nUSBキーボードをPCに接続して、Ctrl＋Alt＋Delを押し\nログイン画面で「PC USER」にログインしてからシャットダウン／再起動をしてください\nPC USERログインパスワード：P4ckc1ty\nKiosk　ログインパスワード：kiosk",
     最寄センター:"", センター住所:"", 備考:"",
-    作業日:TODAY, 作業担当:"田中 誠", 到着時状況:"", 到着時写真:[], 実施内容:"", 写真:[],
+    作業日:TODAY, 作業担当:"田中 誠", 到着時状況:"", 実施内容:"",
     status:"作業中"
   },
   {
@@ -535,7 +494,7 @@ const initialTasks = [
     障害内容:"扉確認",
     作業指示:"扉確認\n\nボックスNo：26番（2R6）\n症状：開かない\n内在荷物：あり\n荷物情報：あり\n\n・到着時の画面は必ず撮影してください\n・復旧後は、メンテナンスモードから\n　全ての扉の開閉確認と\n　荷物情報＝内在荷物の一致の確認\n　スキャナーの動作確認をお願いします\n\n※ PCをシャットダウン／再起動する場合は\nUSBキーボードをPCに接続して、Ctrl＋Alt＋Delを押し\nログイン画面で「PC USER」にログインしてからシャットダウン／再起動をしてください\nPC USERログインパスワード：P4ckc1ty\nKiosk　ログインパスワード：kiosk",
     最寄センター:"", センター住所:"", 備考:"",
-    作業日:TODAY, 作業担当:"鈴木 一郎", 到着時状況:"", 到着時写真:[], 実施内容:"", 写真:[],
+    作業日:TODAY, 作業担当:"鈴木 一郎", 到着時状況:"", 実施内容:"",
     status:"部材待ち"
   },
   {
@@ -545,7 +504,7 @@ const initialTasks = [
     障害内容:"扉確認",
     作業指示:"扉確認\n\nボックスNo：19番(1R9)\n症状：電磁ロックが傾いている。開閉は問題ない。\n内在荷物：なし\n荷物情報：なし\n\n他のボックスもロック固定ナットの確認をお願いします。\n防水ワッシャー取り付けもお願いします。\n\n防水ワッシャーとナット10個発送します。\n\n・到着時の画面は必ず撮影してください\n・復旧後は、メンテナンスモードから\n　全ての扉の開閉確認と\n　荷物情報＝内在荷物の一致の確認\n　スキャナーの動作確認をお願いします\n\n※ PCをシャットダウン／再起動する場合は\nUSBキーボードをPCに接続して、Ctrl＋Alt＋Delを押し\nログイン画面で「PC USER」にログインしてからシャットダウン／再起動をしてください\nPC USERログインパスワード：P4ckc1ty\nKiosk　ログインパスワード：kiosk",
     最寄センター:"大井町仙台坂営業所", センター住所:"東京都品川区東大井５丁目７－９", 備考:"",
-    作業日:TODAY, 作業担当:"佐藤 健", 到着時状況:"", 到着時写真:[], 実施内容:"扉確認について現地確認の上、対応完了。動作確認済み。", 写真:[],
+    作業日:TODAY, 作業担当:"佐藤 健", 到着時状況:"", 実施内容:"扉確認について現地確認の上、対応完了。動作確認済み。",
     status:"完了"
   },
   {
@@ -555,7 +514,7 @@ const initialTasks = [
     障害内容:"KEBA機：ファンユニット交換",
     作業指示:"KEBA機：ファンユニット交換\n\n上部排気口のフィルター交換もお願いいたします。\n\n防水ワッシャー取り付けもお願いいたします。\n\n・到着時の画面は必ず撮影してください\n・復旧後は、メンテナンスモードから\n　全ての扉の開閉確認と\n　荷物情報＝内在荷物の一致の確認\n　スキャナーの動作確認をお願いします\n\n※ PCをシャットダウン／再起動する場合は\nUSBキーボードをPCに接続して、Ctrl＋Alt＋Delを押し\nログイン画面で「PC USER」にログインしてからシャットダウン／再起動をしてください\nPC USERログインパスワード：P4ckc1ty\nKiosk　ログインパスワード：kiosk",
     最寄センター:"同センター", センター住所:"", 備考:"",
-    作業日:TODAY, 作業担当:"田中 誠", 到着時状況:"", 到着時写真:[], 実施内容:"", 写真:[],
+    作業日:TODAY, 作業担当:"田中 誠", 到着時状況:"", 実施内容:"",
     status:"保留"
   },
   {
@@ -565,133 +524,10 @@ const initialTasks = [
     障害内容:"スキャナ確認",
     作業指示:"スキャナ確認\n\n症状：PC再起動後もスキャナー読み取り履歴なし\n\n・到着時の画面は必ず撮影してください\n・復旧後は、メンテナンスモードから\n　全ての扉の開閉確認と\n　荷物情報＝内在荷物の一致の確認\n　スキャナーの動作確認をお願いします\n\n※ PCをシャットダウン／再起動する場合は\nUSBキーボードをPCに接続して、Ctrl＋Alt＋Delを押し\nログイン画面で「PC USER」にログインしてからシャットダウン／再起動をしてください\nPC USERログインパスワード：P4ckc1ty\nKiosk　ログインパスワード：kiosk",
     最寄センター:"", センター住所:"", 備考:"",
-    作業日:TODAY, 作業担当:"鈴木 一郎", 到着時状況:"", 到着時写真:[], 実施内容:"", 写真:[],
+    作業日:TODAY, 作業担当:"鈴木 一郎", 到着時状況:"", 実施内容:"",
     status:"未着手"
   },
 ];
-
-const MAX_PHOTO_BYTES = 1024 * 1024; // 1MB
-
-function dataUrlByteSize(dataUrl){
-  const base64 = dataUrl.split(",")[1] || "";
-  return Math.floor(base64.length * 0.75);
-}
-
-// 1MB以下になるまで、画質→解像度の順に段階的に圧縮する
-function resizeImageToUnder1MB(dataUrl){
-  return new Promise((resolve)=>{
-    const img = new Image();
-    img.onload = ()=>{
-      let width = img.width;
-      let height = img.height;
-      const maxDim = 2400;
-      if(width>maxDim || height>maxDim){
-        const ratio = Math.min(maxDim/width, maxDim/height);
-        width = Math.round(width*ratio);
-        height = Math.round(height*ratio);
-      }
-
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-
-      function attempt(w,h,quality){
-        canvas.width = w;
-        canvas.height = h;
-        ctx.clearRect(0,0,w,h);
-        ctx.drawImage(img,0,0,w,h);
-        const out = canvas.toDataURL("image/jpeg", quality);
-        if(dataUrlByteSize(out) <= MAX_PHOTO_BYTES || (quality<=0.4 && w<=600)){
-          resolve(out);
-          return;
-        }
-        if(quality>0.4){
-          attempt(w,h,quality-0.15);
-        } else {
-          attempt(Math.round(w*0.8), Math.round(h*0.8), 0.7);
-        }
-      }
-      attempt(width,height,0.85);
-    };
-    img.onerror = ()=>resolve(dataUrl);
-    img.src = dataUrl;
-  });
-}
-
-// 撮影直後にファイルを小さく縮小する（プレビュー＆保持用の軽量版）
-// 高画素機種（5000万画素超など）はフルサイズを一度にcanvasへ描画すると
-// メモリ確保に失敗することがあるため、2倍刻みの段階的縮小で
-// 各ステップの作業用メモリを抑える（ステップダウンサンプリング）
-async function fileToCompactThumbnail(file){
-  const TARGET_MAX_DIM = 1280;
-  const QUALITY = 0.72;
-
-  let bitmap;
-  try{
-    bitmap = await createImageBitmap(file);
-  }catch(e){
-    bitmap = null;
-  }
-
-  let srcCanvas, srcW, srcH;
-
-  if(bitmap){
-    srcW = bitmap.width;
-    srcH = bitmap.height;
-    srcCanvas = bitmap;
-  } else {
-    // createImageBitmap非対応、または失敗した場合のフォールバック
-    const dataUrl = await new Promise((resolve,reject)=>{
-      const reader = new FileReader();
-      reader.onload = (evt)=>resolve(evt.target.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-    const img = await new Promise((resolve,reject)=>{
-      const im = new Image();
-      im.onload = ()=>resolve(im);
-      im.onerror = reject;
-      im.src = dataUrl;
-    });
-    srcW = img.width;
-    srcH = img.height;
-    srcCanvas = img;
-  }
-
-  let curCanvas = srcCanvas;
-  let curW = srcW;
-  let curH = srcH;
-
-  // 2倍刻みで段階的に縮小（一気に大幅縮小しない）
-  while(curW > TARGET_MAX_DIM*2 || curH > TARGET_MAX_DIM*2){
-    const nextW = Math.round(curW/2);
-    const nextH = Math.round(curH/2);
-    const step = document.createElement("canvas");
-    step.width = nextW;
-    step.height = nextH;
-    const stepCtx = step.getContext("2d");
-    stepCtx.drawImage(curCanvas,0,0,nextW,nextH);
-    if(curCanvas.close) curCanvas.close();
-    curCanvas = step;
-    curW = nextW;
-    curH = nextH;
-  }
-
-  // 最終サイズへ仕上げ
-  let finalW = curW, finalH = curH;
-  if(finalW>TARGET_MAX_DIM || finalH>TARGET_MAX_DIM){
-    const ratio = Math.min(TARGET_MAX_DIM/finalW, TARGET_MAX_DIM/finalH);
-    finalW = Math.round(finalW*ratio);
-    finalH = Math.round(finalH*ratio);
-  }
-  const finalCanvas = document.createElement("canvas");
-  finalCanvas.width = finalW;
-  finalCanvas.height = finalH;
-  const finalCtx = finalCanvas.getContext("2d");
-  finalCtx.drawImage(curCanvas,0,0,finalW,finalH);
-  if(curCanvas.close) curCanvas.close();
-
-  return finalCanvas.toDataURL("image/jpeg", QUALITY);
-}
 
 function formatDateJp(dateStr){
   if(!dateStr) return "-";
@@ -799,9 +635,7 @@ function gasRowToTask(row, index){
     作業日: workDate || TODAY,
     作業担当: row["作業担当"] || "",
     到着時状況: row["到着時の状況"] || "",
-    到着時写真: [], // 写真はGAS未連携（テキスト情報のみ連携のため）
     実施内容: row["実施した作業内容"] || "",
-    写真: [],
     status: status,
   };
 }
@@ -849,9 +683,9 @@ async function updateTaskOnGas(gasUrl, task){
     "作業担当": task.作業担当,
     "作業日": task.作業日,
     "到着時の状況": task.到着時状況,
-    "到着時写真枚数": (task.到着時写真||[]).length,
+    "到着時写真枚数": 0,
     "実施した作業内容": task.実施内容,
-    "報告用写真枚数": (task.写真||[]).length,
+    "報告用写真枚数": 0,
   };
 
   if(typeof google !== "undefined" && google.script && google.script.run){
@@ -1235,8 +1069,8 @@ function App(){
             備考:row["備考"]||"",
             作業日:row["作業日"]||TODAY,
             作業担当:row["作業担当"]||"未割当",
-            到着時状況:"", 到着時写真:[],
-            実施内容:"", 写真:[],
+            到着時状況:"",
+            実施内容:"",
             status:"未着手"
           });
         }
@@ -1259,7 +1093,7 @@ function App(){
         障害内容:"照明が一部点灯せず、夜間利用時に視認性が低下",
         作業指示:"照明が一部点灯せず、夜間利用時に視認性が低下。\n内部照明LED交換をお願いします。",
         最寄センター:"千葉駅前センター", センター住所:"", 備考:"",
-        作業日:TODAY, 作業担当:"佐藤 健", 到着時状況:"", 到着時写真:[], 実施内容:"", 写真:[],
+        作業日:TODAY, 作業担当:"佐藤 健", 到着時状況:"", 実施内容:"",
         status:"未着手"
       }
     ];
@@ -1549,14 +1383,6 @@ function TaskCard({task,isDup,expanded,onToggleExpand,onStatusChange,onFieldChan
             onChange={(e)=>onFieldChange("到着時状況", e.target.value)}
             placeholder="現場到着時の状況を記入してください（完了報告に反映されます）"
           />
-          <span className="field-label">
-            到着時の写真
-            {task.到着時写真.length>0 && <span className="photo-count-tag">{task.到着時写真.length}枚</span>}
-          </span>
-          <PhotoPicker
-            photos={task.到着時写真}
-            onChange={(photos)=>onFieldChange("到着時写真", photos)}
-          />
 
           <span className="field-label">実施した作業内容</span>
           {(templates||[]).length>0 && (
@@ -1579,15 +1405,6 @@ function TaskCard({task,isDup,expanded,onToggleExpand,onStatusChange,onFieldChan
             placeholder="現場で実施した作業内容を記入してください（完了報告に反映されます）"
           />
 
-          <span className="field-label">
-            報告用写真
-            {task.写真.length>0 && <span className="photo-count-tag">{task.写真.length}枚</span>}
-          </span>
-          <PhotoPicker
-            photos={task.写真}
-            onChange={(photos)=>onFieldChange("写真", photos)}
-          />
-
           {task.status!=="完了" && (
             <button className="complete-work-btn" onClick={onCompleteWork}>
               ✓ 作業完了
@@ -1599,91 +1416,11 @@ function TaskCard({task,isDup,expanded,onToggleExpand,onStatusChange,onFieldChan
   );
 }
 
-function PhotoPicker({photos,onChange}){
-  const cameraInputRef = useRef(null);
-  const galleryInputRef = useRef(null);
-  const [processing,setProcessing] = useState(false);
-  const [error,setError] = useState("");
-
-  async function handleFiles(e){
-    const files = Array.from(e.target.files || []);
-    if(files.length===0) return;
-    setError("");
-    setProcessing(true);
-    const newPhotos = [];
-    let failCount = 0;
-    for(const file of files){
-      try{
-        const compact = await fileToCompactThumbnail(file);
-        newPhotos.push({id:"P"+Date.now()+"_"+Math.random().toString(36).slice(2,7), url:compact, name:file.name});
-      }catch(err){
-        console.error("photo resize error:", err);
-        failCount++;
-      }
-    }
-    if(newPhotos.length>0){
-      onChange([...photos,...newPhotos]);
-    }
-    if(failCount>0){
-      setError(`${failCount}枚の写真を処理できませんでした。「ギャラリーから選択」もお試しください。`);
-    }
-    setProcessing(false);
-    e.target.value="";
-  }
-
-  function removePhoto(id){
-    onChange(photos.filter(p=>p.id!==id));
-  }
-
-  return (
-    <div>
-      <div className="photo-strip">
-        {photos.map(p=>(
-          <div className="photo-thumb" key={p.id}>
-            <img src={p.url} alt={p.name} />
-            <button className="remove-btn" onClick={()=>removePhoto(p.id)}>✕</button>
-          </div>
-        ))}
-        <button className="photo-add-btn" onClick={()=>cameraInputRef.current.click()} disabled={processing}>
-          <span className="plus">{processing ? "⏳" : "📷"}</span>
-          <span>{processing ? "処理中" : "撮影"}</span>
-        </button>
-        <button className="photo-add-btn" onClick={()=>galleryInputRef.current.click()} disabled={processing}>
-          <span className="plus">{processing ? "⏳" : "🖼"}</span>
-          <span>{processing ? "処理中" : "ギャラリー"}</span>
-        </button>
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="file-input-hidden"
-          onChange={handleFiles}
-        />
-        <input
-          ref={galleryInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="file-input-hidden"
-          onChange={handleFiles}
-        />
-      </div>
-      {error && <div className="photo-error-text">{error}</div>}
-    </div>
-  );
-}
 
 function ReportModal({task,reportText,setReportText,onCopy,onClose}){
   const [copied,setCopied] = useState(false);
   const [mailTo,setMailTo] = useState("kazuyuki.sudo@packcity.co.jp");
   const [mailSubject,setMailSubject] = useState("");
-
-  function taskAllPhotos(t){
-    return [...(t.到着時写真||[]), ...(t.写真||[])];
-  }
-
-  const totalPhotos = useMemo(()=>taskAllPhotos(task).length, [task]);
 
   useEffect(()=>{
     setMailSubject(`【作業完了報告】${task.PCJ番号}　${task.ロッカー名}`);
@@ -1699,47 +1436,11 @@ function ReportModal({task,reportText,setReportText,onCopy,onClose}){
     const subject = encodeURIComponent(mailSubject);
     const body = encodeURIComponent(reportText);
     const mailtoUrl = `mailto:${mailTo}?subject=${subject}&body=${body}`;
-    // GASのHtmlService(iframe)環境ではwindow.location.hrefが動かないため
-    // window.openを使う。それも動かない場合はgoogle.script.run経由で開く
     if(typeof google !== "undefined" && google.script && google.script.host){
       google.script.host.openUrl ? google.script.host.openUrl(mailtoUrl) : window.open(mailtoUrl, "_blank");
     } else {
       window.open(mailtoUrl, "_blank") || (window.location.href = mailtoUrl);
     }
-  }
-
-  const [saving,setSaving] = useState(false);
-  const [saveProgress,setSaveProgress] = useState({done:0,total:0});
-
-  function triggerDownload(dataUrl,filename){
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-
-  async function saveOnePhoto(photo){
-    const resized = await resizeImageToUnder1MB(photo.url);
-    const filename = (photo.name || "photo.jpg").replace(/\.[^.]+$/,"") + "_resized.jpg";
-    triggerDownload(resized, filename);
-  }
-
-  async function saveAllPhotos(){
-    const allPhotos = taskAllPhotos(task);
-    if(allPhotos.length===0) return;
-    setSaving(true);
-    setSaveProgress({done:0,total:allPhotos.length});
-    for(let i=0;i<allPhotos.length;i++){
-      const p = allPhotos[i];
-      const resized = await resizeImageToUnder1MB(p.url);
-      const filename = `${task.ロッカー名}_${i+1}_resized.jpg`.replace(/[\\/:*?"<>|]/g,"");
-      triggerDownload(resized, filename);
-      setSaveProgress({done:i+1,total:allPhotos.length});
-      await new Promise(r=>setTimeout(r,350));
-    }
-    setSaving(false);
   }
 
   return (
@@ -1755,7 +1456,7 @@ function ReportModal({task,reportText,setReportText,onCopy,onClose}){
           <div className="task-select-row checked">
             <div className="checkbox on">✓</div>
             <div>
-              <div className="tsr-name">{task.ロッカー名}{totalPhotos>0 && <span className="photo-count-tag">📷{totalPhotos}</span>}</div>
+              <div className="tsr-name">{task.ロッカー名}</div>
               <div className="tsr-sub">{task.依頼No}　{formatDateJp(task.作業日)}　{task.作業担当}</div>
             </div>
           </div>
@@ -1776,46 +1477,6 @@ function ReportModal({task,reportText,setReportText,onCopy,onClose}){
             value={reportText}
             onChange={(e)=>setReportText(e.target.value)}
           />
-
-          {totalPhotos>0 && (
-            <div className="mail-photo-section">
-              <div className="mail-step-banner">
-                <span className="ic">💡</span>
-                <span><b>写真はメールに自動添付されません。</b>「全ての写真を端末に保存」で1MB以下にリサイズしてギャラリーに保存し、メールアプリ側で手動添付してください。</span>
-              </div>
-              <div style={{marginBottom:10}}>
-                {task.到着時写真 && task.到着時写真.length>0 && (
-                  <div style={{marginBottom:6}}>
-                    <div className="photo-sub-label">到着時</div>
-                    <div className="photo-strip">
-                      {task.到着時写真.map(p=>(
-                        <div className="photo-thumb" key={p.id} onClick={()=>saveOnePhoto(p)}>
-                          <img src={p.url} alt={p.name} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {task.写真 && task.写真.length>0 && (
-                  <div>
-                    <div className="photo-sub-label">作業後</div>
-                    <div className="photo-strip">
-                      {task.写真.map(p=>(
-                        <div className="photo-thumb" key={p.id} onClick={()=>saveOnePhoto(p)}>
-                          <img src={p.url} alt={p.name} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <button className="save-all-btn" onClick={saveAllPhotos} disabled={saving}>
-                {saving
-                  ? `⏳ リサイズ・保存中… (${saveProgress.done}/${saveProgress.total})`
-                  : "⬇ 全ての写真を端末に保存（1MB以下にリサイズ）"}
-              </button>
-            </div>
-          )}
         </div>
         <div className="modal-foot">
           <button className={"copy-btn "+(copied?"copied":"")} onClick={handleCopy}>
