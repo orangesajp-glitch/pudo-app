@@ -718,6 +718,30 @@ function formatMailReceivedAt(value){
 // （変更内容はブラウザを閉じると失われるため、再設定が必要な場合がある）
 const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbxOXvDzeG9cV6bF_xNXc4C2eFJhZtlBP15ETbm4RtXopEr5o4JFrJgDP4hSmQrHDsz3bA/exec";
 
+// 作業者リストのデフォルト（初回起動時のみ使用）
+const DEFAULT_WORKERS = ["山崎","新井","hi_ho_world_777"];
+
+// 作業内容テンプレートのデフォルト（初回起動時のみ使用）
+const DEFAULT_TEMPLATES = [
+  "現地到着。電源OFF/ONにて復旧確認。全扉開閉・荷物情報・スキャナー動作確認済み。",
+  "現地到着。PCシャットダウン後再起動にて復旧確認。全扉開閉・荷物情報・スキャナー動作確認済み。",
+  "現地到着。指定部材と交換。復旧確認。全扉開閉・荷物情報・スキャナー動作確認済み。",
+];
+
+// localStorageのキー
+const LS_WORKERS_KEY = "pudo_workers";
+const LS_TEMPLATES_KEY = "pudo_templates";
+
+function loadFromLS(key, defaultVal){
+  try{
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : defaultVal;
+  }catch(e){ return defaultVal; }
+}
+function saveToLS(key, val){
+  try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){}
+}
+
 // GASの「依頼一覧」シートの列名 ←→ アプリ内のタスクオブジェクトのキー、の対応表
 const GAS_FIELD_MAP = {
   依頼No: "依頼No",
@@ -940,6 +964,9 @@ function App(){
 
   // ---- GASスプレッドシート連携 ----
   const [gasUrl,setGasUrl] = useState(DEFAULT_GAS_URL);
+  const [workers,setWorkers] = useState(()=>loadFromLS(LS_WORKERS_KEY, DEFAULT_WORKERS));
+  const [templates,setTemplates] = useState(()=>loadFromLS(LS_TEMPLATES_KEY, DEFAULT_TEMPLATES));
+  const [workerTemplateOpen,setWorkerTemplateOpen] = useState(false);
   const [gasSettingsOpen,setGasSettingsOpen] = useState(false);
   const [gasStatus,setGasStatus] = useState("idle"); // idle | syncing | ok | error
   const [gasError,setGasError] = useState("");
@@ -1082,14 +1109,16 @@ function App(){
   const completedTasks = useMemo(()=>tasks.filter(t=>t.status==="完了"),[tasks]);
   const reportTargetTask = useMemo(()=>tasks.find(t=>t.id===reportTargetId) || null,[tasks,reportTargetId]);
 
-  function updateStatus(id,newStatus){
-    let updatedTask = null;
-    setTasks(prev=>prev.map(t=>{
-      if(t.id!==id) return t;
-      updatedTask = {...t,status:newStatus};
-      return updatedTask;
-    }));
-    if(updatedTask) pushTaskUpdateToGas(updatedTask);
+  async function updateStatus(id,newStatus){
+    const currentTask = tasks.find(t=>t.id===id);
+    if(!currentTask) return;
+    const updatedTask = {...currentTask, status:newStatus};
+    setTasks(prev=>prev.map(t=> t.id===id ? updatedTask : t));
+    try{
+      await updateTaskOnGas(gasUrl, updatedTask);
+    }catch(err){
+      setToast({msg:"⚠ スプレッドシートへの保存に失敗しました。",alert:true});
+    }
   }
 
   function updateTaskField(id,field,value){
@@ -1260,6 +1289,9 @@ function App(){
             </div>
           </div>
           <div style={{display:"flex",gap:7}}>
+            <button className="icon-btn" onClick={()=>setWorkerTemplateOpen(true)} aria-label="作業者・テンプレート管理" title="作業者・テンプレート管理">
+              👤
+            </button>
             <button className="icon-btn" onClick={()=>setGasSettingsOpen(true)} aria-label="同期設定">
               {gasStatus==="syncing" ? "⏳" : gasStatus==="ok" ? "🔗" : gasStatus==="error" ? "⚠" : "⚙"}
             </button>
@@ -1332,6 +1364,8 @@ function App(){
             onFieldChange={(field,val)=>updateTaskField(task.id,field,val)}
             onStartWork={()=>startWork(task.id)}
             onCompleteWork={()=>completeWork(task.id)}
+            workers={workers}
+            templates={templates}
           />
         ))}
       </main>
@@ -1370,6 +1404,16 @@ function App(){
         />
       )}
 
+      {workerTemplateOpen && (
+        <WorkerTemplateModal
+          workers={workers}
+          templates={templates}
+          onSaveWorkers={(w)=>{ setWorkers(w); saveToLS(LS_WORKERS_KEY,w); }}
+          onSaveTemplates={(t)=>{ setTemplates(t); saveToLS(LS_TEMPLATES_KEY,t); }}
+          onClose={()=>setWorkerTemplateOpen(false)}
+        />
+      )}
+
       {gasSettingsOpen && (
         <GasSettingsModal
           gasUrl={gasUrl}
@@ -1387,7 +1431,7 @@ function App(){
   );
 }
 
-function TaskCard({task,isDup,expanded,onToggleExpand,onStatusChange,onFieldChange,onStartWork,onCompleteWork}){
+function TaskCard({task,isDup,expanded,onToggleExpand,onStatusChange,onFieldChange,onStartWork,onCompleteWork,workers,templates}){
   const barColor = STATUS_COLOR[task.status].bar;
   const isUrgent = task.対応==="緊急";
   return (
@@ -1469,12 +1513,26 @@ function TaskCard({task,isDup,expanded,onToggleExpand,onStatusChange,onFieldChan
           <div className="instruction-box">{task.作業指示}</div>
 
           <span className="field-label">作業担当</span>
-          <input
-            className="text-field"
-            value={task.作業担当}
-            onChange={(e)=>onFieldChange("作業担当", e.target.value)}
-            placeholder="担当者名を入力"
-          />
+          <div style={{display:"flex",gap:6,marginBottom:8}}>
+            <select
+              className="text-field"
+              style={{flex:"0 0 auto",width:"auto"}}
+              value=""
+              onChange={(e)=>{ if(e.target.value) onFieldChange("作業担当", e.target.value); }}
+            >
+              <option value="">選択...</option>
+              {(workers||[]).map((w,i)=>(
+                <option key={i} value={w}>{w}</option>
+              ))}
+            </select>
+            <input
+              className="text-field"
+              style={{flex:1}}
+              value={task.作業担当}
+              onChange={(e)=>onFieldChange("作業担当", e.target.value)}
+              placeholder="または直接入力"
+            />
+          </div>
 
           <span className="field-label">作業日</span>
           <input
@@ -1501,6 +1559,19 @@ function TaskCard({task,isDup,expanded,onToggleExpand,onStatusChange,onFieldChan
           />
 
           <span className="field-label">実施した作業内容</span>
+          {(templates||[]).length>0 && (
+            <select
+              className="text-field"
+              style={{marginBottom:6}}
+              value=""
+              onChange={(e)=>{ if(e.target.value) onFieldChange("実施内容", e.target.value); }}
+            >
+              <option value="">テンプレートから選択...</option>
+              {(templates||[]).map((t,i)=>(
+                <option key={i} value={t}>{t.length>30 ? t.slice(0,30)+"…" : t}</option>
+              ))}
+            </select>
+          )}
           <textarea
             className="textarea-field"
             value={task.実施内容}
@@ -1788,6 +1859,123 @@ function ImportModal({onClose,onFileSelected,onLoadDummy,fileInputRef}){
             ※依頼Noが既存データと重複する場合は自動でアラート表示されます。
           </div>
           <button className="sample-link" onClick={onLoadDummy}>または、サンプルデータを1件追加して試す →</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WorkerTemplateModal({workers,templates,onSaveWorkers,onSaveTemplates,onClose}){
+  const [tab,setTab] = useState("workers"); // workers | templates
+  const [workerList,setWorkerList] = useState([...workers]);
+  const [templateList,setTemplateList] = useState([...templates]);
+  const [newWorker,setNewWorker] = useState("");
+  const [newTemplate,setNewTemplate] = useState("");
+
+  function handleSave(){
+    onSaveWorkers(workerList.filter(w=>w.trim()!==""));
+    onSaveTemplates(templateList.filter(t=>t.trim()!==""));
+    onClose();
+  }
+
+  function addWorker(){
+    if(!newWorker.trim()) return;
+    setWorkerList(prev=>[...prev, newWorker.trim()]);
+    setNewWorker("");
+  }
+
+  function removeWorker(i){
+    setWorkerList(prev=>prev.filter((_,idx)=>idx!==i));
+  }
+
+  function addTemplate(){
+    if(!newTemplate.trim()) return;
+    setTemplateList(prev=>[...prev, newTemplate.trim()]);
+    setNewTemplate("");
+  }
+
+  function removeTemplate(i){
+    setTemplateList(prev=>prev.filter((_,idx)=>idx!==i));
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <div className="modal-sheet">
+        <div className="modal-handle"></div>
+        <div className="modal-head">
+          <h2>作業者・テンプレート管理</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div style={{display:"flex",gap:0,borderBottom:"1px solid var(--line)",margin:"0 16px"}}>
+          <button
+            style={{flex:1,padding:"10px 0",background:"none",border:"none",fontWeight:tab==="workers"?800:400,
+              borderBottom:tab==="workers"?"2.5px solid var(--navy)":"2.5px solid transparent",
+              color:tab==="workers"?'var(--navy)':'var(--ink-soft)',fontSize:16}}
+            onClick={()=>setTab("workers")}>作業者リスト</button>
+          <button
+            style={{flex:1,padding:"10px 0",background:"none",border:"none",fontWeight:tab==="templates"?800:400,
+              borderBottom:tab==="templates"?"2.5px solid var(--navy)":"2.5px solid transparent",
+              color:tab==="templates"?'var(--navy)':'var(--ink-soft)',fontSize:16}}
+            onClick={()=>setTab("templates")}>作業内容テンプレート</button>
+        </div>
+        <div className="modal-body">
+          {tab==="workers" && (
+            <>
+              <div className="section-label">作業者リスト</div>
+              {workerList.map((w,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <input
+                    className="text-field"
+                    style={{flex:1,marginBottom:0}}
+                    value={w}
+                    onChange={(e)=>setWorkerList(prev=>prev.map((x,idx)=>idx===i?e.target.value:x))}
+                  />
+                  <button onClick={()=>removeWorker(i)} style={{background:"none",border:"none",color:"var(--red)",fontSize:22,padding:"0 4px",cursor:"pointer"}}>✕</button>
+                </div>
+              ))}
+              <div style={{display:"flex",gap:8,marginTop:8}}>
+                <input
+                  className="text-field"
+                  style={{flex:1,marginBottom:0}}
+                  value={newWorker}
+                  onChange={(e)=>setNewWorker(e.target.value)}
+                  placeholder="新しい作業者名を入力"
+                  onKeyDown={(e)=>{ if(e.key==="Enter") addWorker(); }}
+                />
+                <button className="copy-btn" style={{flex:"0 0 auto"}} onClick={addWorker}>追加</button>
+              </div>
+            </>
+          )}
+          {tab==="templates" && (
+            <>
+              <div className="section-label">作業内容テンプレート</div>
+              {templateList.map((t,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:8}}>
+                  <textarea
+                    className="textarea-field"
+                    style={{flex:1,marginBottom:0,minHeight:60}}
+                    value={t}
+                    onChange={(e)=>setTemplateList(prev=>prev.map((x,idx)=>idx===i?e.target.value:x))}
+                  />
+                  <button onClick={()=>removeTemplate(i)} style={{background:"none",border:"none",color:"var(--red)",fontSize:22,padding:"4px",cursor:"pointer",flexShrink:0}}>✕</button>
+                </div>
+              ))}
+              <div style={{marginTop:8}}>
+                <textarea
+                  className="textarea-field"
+                  value={newTemplate}
+                  onChange={(e)=>setNewTemplate(e.target.value)}
+                  placeholder="新しいテンプレートを入力"
+                  style={{minHeight:70}}
+                />
+                <button className="copy-btn" style={{width:"100%",marginTop:6}} onClick={addTemplate}>テンプレートを追加</button>
+              </div>
+            </>
+          )}
+        </div>
+        <div className="modal-foot">
+          <button className="ghost-btn" onClick={onClose}>キャンセル</button>
+          <button className="copy-btn" onClick={handleSave}>保存して閉じる</button>
         </div>
       </div>
     </div>
