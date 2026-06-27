@@ -363,20 +363,7 @@
   .section-label{font-size:17.2px;font-weight:700;color:var(--ink-soft);letter-spacing:0.04em;margin:18px 0 9px;text-transform:uppercase;}
   .section-label:first-child{margin-top:0;}
 
-  .import-drop{
-    border:2px dashed var(--line);border-radius:13px;padding:26px 16px;text-align:center;color:var(--ink-soft);
-    font-size:18.8px;background:#fff;line-height:1.7;
-  }
-  .import-drop .big{font-size:42px;display:block;margin-bottom:6px;}
   .file-input-hidden{display:none;}
-  .upload-btn{
-    margin-top:12px;background:var(--orange);color:#fff;border:none;border-radius:9px;padding:10px 18px;
-    font-size:18.8px;font-weight:700;
-  }
-  .sample-link{
-    display:block;text-align:center;margin-top:10px;font-size:17.2px;color:var(--blue);font-weight:600;background:none;border:none;
-  }
-  .csv-hint{font-size:15.8px;color:var(--ink-soft);margin-top:10px;line-height:1.6;background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 11px;}
   .toast{
     position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;
     padding:10px 18px;border-radius:99px;font-size:18.8px;font-weight:600;z-index:60;box-shadow:0 6px 18px rgba(0,0,0,0.25);
@@ -802,12 +789,10 @@ function App(){
   const [search,setSearch] = useState("");
   const [expandedId,setExpandedId] = useState(null);
   const [reportOpen,setReportOpen] = useState(false);
-  const [importOpen,setImportOpen] = useState(false);
   const [dupModalOpen,setDupModalOpen] = useState(false);
   const [reportTargetId,setReportTargetId] = useState(null);
   const [reportText,setReportText] = useState("");
   const [toast,setToast] = useState({msg:"",alert:false});
-  const fileInputRef = useRef(null);
 
   // ---- GASスプレッドシート連携 ----
   const [gasUrl,setGasUrl] = useState(DEFAULT_GAS_URL);
@@ -1049,70 +1034,7 @@ function App(){
     }
   }
 
-  function handleCsvFile(e){
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt)=>{
-      try{
-        const text = evt.target.result;
-        const rows = text.split(/\r?\n/).filter(r=>r.trim().length>0);
-        if(rows.length<2){ setToast({msg:"データが見つかりませんでした",alert:true}); return; }
-        const headers = rows[0].split(",").map(h=>h.trim());
-        const newTasks = [];
-        for(let i=1;i<rows.length;i++){
-          const cols = rows[i].split(",").map(c=>c.trim());
-          const row = {};
-          headers.forEach((h,idx)=>{ row[h]=cols[idx]||""; });
-          newTasks.push({
-            id:"IMP"+Date.now()+"_"+i,
-            依頼No:row["依頼No"]||("IMPORT-"+i),
-            メール受信日時:row["メール受信日時"]||new Date().toISOString(),
-            対応:row["対応"]||"通常",
-            依頼日:row["依頼日"]||TODAY,
-            PCJ番号:row["PCJ番号"]||"-",
-            ロッカー名:row["ロッカー名"]||"(名称未設定)",
-            住所:row["住所"]||"-",
-            ロッカータイプ:row["ロッカータイプ"]||"-",
-            内在荷物:row["内在荷物"]||"なし",
-            障害内容:row["障害内容"]||"-",
-            作業指示:row["作業指示"]||row["障害内容"]||"-",
-            最寄センター:row["最寄ヤマトセンター"]||"",
-            センター住所:row["センター住所"]||"",
-            備考:row["備考"]||"",
-            作業日:row["作業日"]||TODAY,
-            作業担当:row["作業担当"]||"未割当",
-            到着時状況:"",
-            実施内容:"",
-            status:"未着手"
-          });
-        }
-        checkAndAddTasks(newTasks);
-        setImportOpen(false);
-      }catch(err){
-        setToast({msg:"読み込みに失敗しました。CSV形式をご確認ください",alert:true});
-      }
-    };
-    reader.readAsText(file,"UTF-8");
-    e.target.value="";
-  }
 
-  function loadMoreDummy(){
-    const extra = [
-      {
-        id:"T00"+Math.floor(Math.random()*9000+1000), 依頼No:"202606-HK225", メール受信日時:null, 対応:"通常", 依頼日:TODAY,
-        PCJ番号:"PCJ01240", ロッカー名:"PUDOステーション 千葉駅前店",
-        住所:"千葉県千葉市中央区新町1-1", ロッカータイプ:"out", 内在荷物:"有り",
-        障害内容:"照明が一部点灯せず、夜間利用時に視認性が低下",
-        作業指示:"照明が一部点灯せず、夜間利用時に視認性が低下。\n内部照明LED交換をお願いします。",
-        最寄センター:"千葉駅前センター", センター住所:"", 備考:"",
-        作業日:TODAY, 作業担当:"佐藤 健", 到着時状況:"", 実施内容:"",
-        status:"未着手"
-      }
-    ];
-    checkAndAddTasks(extra);
-    setImportOpen(false);
-  }
 
   if(initialLoading){
     return (
@@ -1142,10 +1064,7 @@ function App(){
             <button className="icon-btn" onClick={()=>setGasSettingsOpen(true)} aria-label="同期設定">
               {gasStatus==="syncing" ? "⏳" : gasStatus==="ok" ? "🔗" : gasStatus==="error" ? "⚠" : "⚙"}
             </button>
-            <button className="icon-btn" onClick={()=>setImportOpen(true)} aria-label="データ取込">
-              ⬆
-              {duplicateGroups.length>0 && <span className="badge-dot">!</span>}
-            </button>
+
           </div>
         </div>
         <div className="stats-row">
@@ -1216,15 +1135,6 @@ function App(){
           />
         ))}
       </main>
-
-      <div className="fab-wrap">
-        <div className="fab-bar">
-          <button className="fab-btn fab-secondary fab-full" onClick={()=>setImportOpen(true)}>
-            ⬆ データ取込
-          </button>
-        </div>
-      </div>
-
       {reportOpen && reportTargetTask && (
         <ReportModal
           task={reportTargetTask}
@@ -1232,15 +1142,6 @@ function App(){
           setReportText={setReportText}
           onCopy={copyReport}
           onClose={()=>setReportOpen(false)}
-        />
-      )}
-
-      {importOpen && (
-        <ImportModal
-          onClose={()=>setImportOpen(false)}
-          onFileSelected={handleCsvFile}
-          onLoadDummy={loadMoreDummy}
-          fileInputRef={fileInputRef}
         />
       )}
 
@@ -1527,40 +1428,6 @@ function ReportModal({task,reportText,setReportText,onCopy,onClose}){
   );
 }
 
-function ImportModal({onClose,onFileSelected,onLoadDummy,fileInputRef}){
-  return (
-    <div className="modal-backdrop" onClick={(e)=>{ if(e.target===e.currentTarget) onClose(); }}>
-      <div className="modal-sheet">
-        <div className="modal-handle"></div>
-        <div className="modal-head">
-          <h2>作業依頼データの取込</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">
-          <div className="import-drop">
-            <span className="big">📄</span>
-            クライアントから届くExcelをCSV形式で<br/>書き出してから取り込んでください。
-            <br/>
-            <button className="upload-btn" onClick={()=>fileInputRef.current.click()}>CSVファイルを選択</button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="file-input-hidden"
-              onChange={onFileSelected}
-            />
-          </div>
-          <div className="csv-hint">
-            1行目はヘッダー行とし、以下の列名を含めてください：<br/>
-            依頼No, 対応, 依頼日, PCJ番号, ロッカー名, 住所, ロッカータイプ, 内在荷物, 障害内容, 作業指示, 最寄ヤマトセンター, センター住所, 備考<br/><br/>
-            ※依頼Noが既存データと重複する場合は自動でアラート表示されます。
-          </div>
-          <button className="sample-link" onClick={onLoadDummy}>または、サンプルデータを1件追加して試す →</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function WorkerTemplateModal({workers,templates,onSaveWorkers,onSaveTemplates,onClose}){
   const [tab,setTab] = useState("workers"); // workers | templates
