@@ -1446,14 +1446,24 @@ function ReportModal({task,reportText,setReportText,onCopy,onClose}){
     setTimeout(()=>setCopied(false),1800);
   }
 
-  function handleOpenMail(){
+  function handleOpenMail(type){
     const subject = encodeURIComponent(mailSubject);
     const body = encodeURIComponent(reportText);
-    const mailtoUrl = `mailto:${mailTo}?subject=${subject}&body=${body}`;
-    if(typeof google !== "undefined" && google.script && google.script.host){
-      google.script.host.openUrl ? google.script.host.openUrl(mailtoUrl) : window.open(mailtoUrl, "_blank");
+    const to = encodeURIComponent(mailTo);
+
+    let url;
+    if(type === "gmail"){
+      // GmailアプリのURLスキーム
+      url = `googlegmail://co?to=${to}&subject=${subject}&body=${body}`;
     } else {
-      window.open(mailtoUrl, "_blank") || (window.location.href = mailtoUrl);
+      // YahooメールアプリのURLスキーム（またはmailto:でデフォルトメーラー）
+      url = `mailto:${mailTo}?subject=${subject}&body=${body}`;
+    }
+
+    if(typeof google !== "undefined" && google.script && google.script.host){
+      google.script.host.openUrl ? google.script.host.openUrl(url) : window.open(url, "_blank");
+    } else {
+      window.open(url, "_blank") || (window.location.href = url);
     }
   }
 
@@ -1492,13 +1502,20 @@ function ReportModal({task,reportText,setReportText,onCopy,onClose}){
             onChange={(e)=>setReportText(e.target.value)}
           />
         </div>
-        <div className="modal-foot">
-          <button className={"copy-btn "+(copied?"copied":"")} onClick={handleCopy}>
-            {copied ? "✓ コピー済" : "📋 文章コピー"}
-          </button>
-          <button className="mail-btn" onClick={handleOpenMail}>
-            ✉ メールで送る
-          </button>
+        <div className="modal-foot" style={{flexDirection:"column",gap:8}}>
+          <div style={{display:"flex",gap:8,width:"100%"}}>
+            <button className={"copy-btn "+(copied?"copied":"")} onClick={handleCopy} style={{flex:1}}>
+              {copied ? "✓ コピー済" : "📋 文章コピー"}
+            </button>
+          </div>
+          <div style={{display:"flex",gap:8,width:"100%"}}>
+            <button className="mail-btn" style={{flex:1,background:"#EA4335"}} onClick={()=>handleOpenMail("gmail")}>
+              ✉ Gmailで送る
+            </button>
+            <button className="mail-btn" style={{flex:1,background:"#720E9E"}} onClick={()=>handleOpenMail("yahoo")}>
+              ✉ Yahooで送る
+            </button>
+          </div>
         </div>
       </div>
     </div>
