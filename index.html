@@ -735,8 +735,6 @@ function buildReportText(task){
   return (
 `【作業完了のご報告】
 
-クライアント各位
-
 お世話になっております。
 下記の通り、ロッカーメンテナンス作業が完了いたしましたのでご報告いたします。
 
@@ -1435,6 +1433,7 @@ function TaskCard({task,isDup,expanded,onToggleExpand,onStatusChange,onFieldChan
 function ReportModal({task,reportText,setReportText,onCopy,onClose}){
   const [copied,setCopied] = useState(false);
   const [mailTo,setMailTo] = useState("kazuyuki.sudo@packcity.co.jp");
+  const [mailCc,setMailCc] = useState("h.yamazaki@orangesa.jp");
   const [mailSubject,setMailSubject] = useState("");
 
   useEffect(()=>{
@@ -1451,14 +1450,15 @@ function ReportModal({task,reportText,setReportText,onCopy,onClose}){
     const subject = encodeURIComponent(mailSubject);
     const body = encodeURIComponent(reportText);
     const to = encodeURIComponent(mailTo);
+    const cc = encodeURIComponent(mailCc);
 
     let url;
     if(type === "gmail"){
       // mailto:形式（Gmailアプリが起動する）
-      url = `mailto:${mailTo}?subject=${subject}&body=${body}`;
+      url = `mailto:${mailTo}?cc=${mailCc}&subject=${subject}&body=${body}`;
     } else {
       // YahooメールウェブアプリのURL（Android・iPhone両対応）
-      url = `https://compose.mail.yahoo.co.jp/?to=${to}&subject=${subject}&body=${body}`;
+      url = `https://compose.mail.yahoo.co.jp/?to=${to}&cc=${cc}&subject=${subject}&body=${body}`;
     }
 
     if(typeof google !== "undefined" && google.script && google.script.host){
@@ -1490,6 +1490,10 @@ function ReportModal({task,reportText,setReportText,onCopy,onClose}){
           <div className="mail-field">
             <label>宛先（To）</label>
             <input className="text-field" value={mailTo} onChange={(e)=>setMailTo(e.target.value)} placeholder="送信先メールアドレス" />
+          </div>
+          <div className="mail-field">
+            <label>CC</label>
+            <input className="text-field" value={mailCc} onChange={(e)=>setMailCc(e.target.value)} placeholder="CCのメールアドレス" />
           </div>
           <div className="mail-field">
             <label>件名</label>
