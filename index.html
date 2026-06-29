@@ -1415,11 +1415,8 @@ function ReportModal({task,reportText,setReportText,onCopy,onClose}){
             </button>
           </div>
           <div style={{display:"flex",gap:8,width:"100%"}}>
-            <button className="mail-btn" style={{flex:1,background:"#EA4335"}} onClick={()=>handleOpenMail("gmail")}>
-              ✉ Gmailで送る
-            </button>
-            <button className="mail-btn" style={{flex:1,background:"#720E9E"}} onClick={()=>handleOpenMail("yahoo")}>
-              ✉ Yahooで送る
+            <button className="mail-btn" style={{flex:1}} onClick={()=>handleOpenMail("gmail")}>
+              ✉ メールで報告する
             </button>
           </div>
         </div>
