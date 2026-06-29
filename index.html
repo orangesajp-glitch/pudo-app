@@ -935,6 +935,15 @@ function App(){
     else if(sortKey==="status") list.sort((a,b)=>STATUS_LIST.indexOf(a.status)-STATUS_LIST.indexOf(b.status));
     else if(sortKey==="urgency") list.sort((a,b)=>(a.対応==="緊急"?0:1)-(b.対応==="緊急"?0:1));
 
+    // 完了タブの場合は作業日が新しい順に上書きソート
+    if(filter==="done"){
+      list.sort((a,b)=>{
+        const da = a.作業日 || "";
+        const db = b.作業日 || "";
+        return db.localeCompare(da);
+      });
+    }
+
     return list;
   },[tasks,filter,search,sortKey]);
 
