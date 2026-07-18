@@ -854,14 +854,10 @@ function App(){
     // eslint-disable-next-line
   },[]);
 
-  // 数分おきの自動再取得（ポーリング）
-  useEffect(()=>{
-    if(!gasUrl) return;
-    const interval = setInterval(()=>{
-      syncFromGas(false);
-    }, 3*60*1000); // 3分おき
-    return ()=>clearInterval(interval);
-  },[gasUrl, syncFromGas]);
+  // ※3分おきの自動同期は廃止した。
+  // 入力途中のデータが自動更新で消えるのを防ぐため、
+  // 同期は「アプリ起動時」「作業開始時」「作業完了時」「手動同期」の
+  // タイミングのみで行う。
 
   // タスク更新をGASに書き戻す（変更があったタスクのみ、デバウンスして送信）
   function pushTaskUpdateToGas(task){
@@ -987,6 +983,8 @@ function App(){
     try{
       await updateTaskOnGas(gasUrl, updatedTask);
       setToast({msg:"作業を開始しました（スプレッドシートに保存済み）",alert:false});
+      // 書き込み後、他の人の更新も反映するため全体を再取得
+      syncFromGas(false);
     }catch(err){
       // 書き込みに失敗した場合はエラーを表示（ローカルの状態は維持）
       setToast({msg:"⚠ スプレッドシートへの保存に失敗しました。再度お試しください。",alert:true});
@@ -1004,6 +1002,8 @@ function App(){
     // GASへ即時書き込み
     try{
       await updateTaskOnGas(gasUrl, updatedTask);
+      // 書き込み後、他の人の更新も反映するため全体を再取得
+      syncFromGas(false);
     }catch(err){
       setToast({msg:"⚠ スプレッドシートへの保存に失敗しました。",alert:true});
     }
